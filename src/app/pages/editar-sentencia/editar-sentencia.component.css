@@ -23,6 +23,7 @@ body {
     height: auto;
     margin: 25px 200px 0px 200px;
     border-radius: 10px;
+    padding-bottom: 20px; /* Espacio extra al final */
 }
 
 .dato-sent {
@@ -37,9 +38,72 @@ body {
 
 .dato-sent input {
     width: 100%;
-    height: 20px;
+    height: 30px; /* Un poco más alto para mejor visualización */
     border-radius: 5px;
+    border: 1px solid #ccc;
+    padding-left: 5px;
 }
+
+/* =========================================
+   ✅ ESTILOS DEL BUSCADOR (AUTOCOMPLETE)
+   ========================================= */
+.autocomplete-container {
+    position: relative;
+    width: 100%;
+}
+
+.docente-input {
+    width: 100%;
+    height: 35px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    padding-left: 10px;
+    font-family: Poppins;
+}
+
+.autocomplete-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 0 0 5px 5px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.autocomplete-list li {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+    font-family: Poppins;
+    font-size: 14px;
+}
+
+.autocomplete-list li:hover {
+    background-color: #e3f2fd;
+}
+
+.no-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    padding: 10px;
+    border: 1px solid #ccc;
+    color: #666;
+    font-size: 14px;
+    font-family: Poppins;
+    z-index: 1000;
+}
+/* Fin Estilos Buscador */
 
 .dato-sent-file {
     margin: 5px 50px 10px 40px;
@@ -72,12 +136,6 @@ body {
     line-height: normal;
 }
 
-.docente{
-    width: 100%;
-    background-color: #fff;
-    border-radius: 5px;
-}
-
 .save{
     align-items: center;
     justify-content: center;
@@ -90,10 +148,10 @@ body {
 }
 
 .alert-content {
-    position: absolute; /* Cambiado a absoluto */
-    top: 10px; /* Ajusta esta posición según sea necesario */
-    right: 20px; /* Ajusta esta posición según sea necesario */
-    z-index: 1000; /* Asegúrate de que esté por encima de otros elementos */
+    position: absolute; 
+    top: 10px; 
+    right: 20px; 
+    z-index: 1000; 
     display: flex;
     justify-content: end;
     margin-top: 100px;
@@ -105,7 +163,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    width: 200px; /* Ajusta el ancho según sea necesario */
+    width: 200px;
     padding: 10px;
     background: #BE3144;
     color: #FFF;
@@ -128,7 +186,6 @@ body {
     padding-top: 20px;
 }
 
-/* Estilos para el mensaje cuando no hay archivo */
 .sin-archivo {
     margin-top: -20px;
     color: red;
@@ -139,7 +196,6 @@ body {
     line-height: normal;
   }
   
-  /* Estilos para el mensaje cuando el archivo está cargado */
   .archivo-subido {
     margin-top: -20px;
     color: #044170;

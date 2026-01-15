@@ -4,12 +4,7 @@ import { AngularFirestore } from "@angular/fire/compat/firestore"
 import { AngularFireAuth } from "@angular/fire/compat/auth"
 import { ActivatedRoute, Router } from "@angular/router"
 import { type Observable, of } from "rxjs"
-
-interface User {
-  uid: string
-  role: string
-  [key: string]: any
-}
+import { AuthService, UserData } from '../../services/auth.service';
 
 @Component({
   selector: "app-evaluacion",
@@ -28,7 +23,11 @@ export class EvaluacionComponent implements OnInit {
   isDocente = false
   mostrarMensaje = false
   calificaciones: { [key: string]: string } = {}
-  currentUser: Observable<User | null | undefined> = of(null)
+
+  // Usamos UserData importado y añadimos currentUserData
+  currentUser: Observable<UserData | null | undefined> = of(null)
+  currentUserData: UserData | null = null;
+
   selectedButtons: { [key: string]: string } = {}
   calificarState: { [key: string]: boolean } = {}
   cargando = false
@@ -49,6 +48,8 @@ export class EvaluacionComponent implements OnInit {
     private route: ActivatedRoute,
     private afAuth: AngularFireAuth,
     private changeDetectorRef: ChangeDetectorRef,
+    // Inyectamos AuthService si se necesita lógica adicional, aunque aquí usamos firestore directo como en el ejemplo
+    private authService: AuthService
   ) {
     this.evaluacionForm = this.fb.group({
       numero_proceso: new FormControl(""),
@@ -163,7 +164,7 @@ export class EvaluacionComponent implements OnInit {
       this.changeDetectorRef.detectChanges()
     })
 
-    // NUEVO: Detectar cambios en el formulario para estudiantes
+    // Detectar cambios en el formulario para estudiantes
     this.evaluacionForm.valueChanges.subscribe(() => {
       if (!this.isDocente && this.initialFormValue) {
         this.detectUnsavedChanges()
@@ -179,19 +180,19 @@ export class EvaluacionComponent implements OnInit {
     finalMotivation: [],
   }
 
-  // NUEVO: Detectar cambios no guardados
+  // Detectar cambios no guardados
   private detectUnsavedChanges() {
     const currentValue = this.evaluacionForm.getRawValue()
     this.hasUnsavedChanges = JSON.stringify(currentValue) !== JSON.stringify(this.initialFormValue)
   }
 
-  // NUEVO: Guardar estado inicial del formulario
+  // Guardar estado inicial del formulario
   private saveInitialFormState() {
     this.initialFormValue = this.evaluacionForm.getRawValue()
     this.hasUnsavedChanges = false
   }
 
-  // NUEVO: Prevenir navegación si hay cambios no guardados
+  // Prevenir navegación si hay cambios no guardados
   @HostListener('window:beforeunload', ['$event'])
   unloadNotification($event: any) {
     if (!this.isDocente && this.hasUnsavedChanges) {
@@ -219,7 +220,13 @@ export class EvaluacionComponent implements OnInit {
     this.changeDetectorRef.detectChanges()
   }
 
-  // MODIFICADO: Validar si el formulario está completo para estudiantes - REQUIERE TODAS LAS SECCIONES
+  /**
+   * Valida si el estudiante ha completado TOTALMENTE el formulario.
+   * La lógica exige:
+   * 1. Selección de un Tipo de Motivación.
+   * 2. Completitud de TODAS las secciones (Inexistencia, Insuficiencia, Apariencia), independiente de la selección principal.
+   * 3. Completitud de la evaluación final.
+   */
   isFormCompleteForStudent(): boolean {
     const motivationType = this.evaluacionForm.get('motivationType')?.value
 
@@ -227,14 +234,14 @@ export class EvaluacionComponent implements OnInit {
       return false
     }
 
-    // CAMBIO CLAVE: Verificar que TODAS las secciones estén completas, no solo la seleccionada
+    // Verificar que TODAS las secciones estén completas, no solo la seleccionada
     const allSectionsComplete = this.areAllSectionsComplete()
     const finalComplete = this.isFinalMotivationComplete()
 
     return allSectionsComplete && finalComplete
   }
 
-  // CORREGIDO: Verificar que TODAS las secciones estén completas (inexistencia, insuficiencia Y apariencia)
+  // Verificar que TODAS las secciones estén completas (inexistencia, insuficiencia Y apariencia)
   areAllSectionsComplete(): boolean {
     const motivationType = this.evaluacionForm.get('motivationType')?.value
 
@@ -242,7 +249,7 @@ export class EvaluacionComponent implements OnInit {
       return false
     }
 
-    // CAMBIO PRINCIPAL: Verificar TODAS las secciones, no solo la seleccionada
+    // Verificar TODAS las secciones, no solo la seleccionada
     const inexistenciaComplete = this.isNonexistenceComplete()
     const insuficienciaComplete = this.isInsufficiencyComplete()
     const aparienciaComplete = this.isAppearanceComplete()
@@ -251,7 +258,7 @@ export class EvaluacionComponent implements OnInit {
     return inexistenciaComplete && insuficienciaComplete && aparienciaComplete
   }
 
-  // NUEVO: Verificar si la evaluación final debe estar disponible
+  // Verificar si la evaluación final debe estar disponible
   isFinalEvaluationEnabled(): boolean {
     if (this.isDocente) {
       return true // Los docentes siempre pueden acceder
@@ -261,7 +268,7 @@ export class EvaluacionComponent implements OnInit {
     return this.areAllSectionsComplete()
   }
 
-  // NUEVO: Obtener mensaje específico para evaluación final bloqueada
+  // Obtener mensaje específico para evaluación final bloqueada
   getFinalEvaluationBlockedMessage(): string {
     const motivationType = this.evaluacionForm.get('motivationType')?.value
 
@@ -276,14 +283,14 @@ export class EvaluacionComponent implements OnInit {
     return ""
   }
 
-  // NUEVO: Verificar si la evaluación final está completa
+  // Verificar si la evaluación final está completa
   private isFinalMotivationComplete(): boolean {
     const finalDeficit = this.evaluacionForm.get('finalMotivationDeficit')?.value
     const finalReasons = this.evaluacionForm.get('finalMotivationReasons')?.value
     return !!(finalDeficit && finalReasons)
   }
 
-  // MODIFICADO: Obtener mensaje de secciones incompletas
+  // Obtener mensaje de secciones incompletas
   getIncompleteSectionsMessage(): string {
     if (!this.areAllSectionsComplete()) {
       return "Debe completar TODAS las secciones (Inexistencia, Insuficiencia y Apariencia) antes de continuar con la Evaluación Final"
@@ -291,7 +298,7 @@ export class EvaluacionComponent implements OnInit {
     return ""
   }
 
-  // MODIFICADO: Obtener secciones incompletas - REVISA TODAS LAS SECCIONES
+  // Obtener secciones incompletas - REVISA TODAS LAS SECCIONES
   getIncompleteSectionsForStudent(): string[] {
     const incomplete: string[] = []
     const motivationType = this.evaluacionForm.get('motivationType')?.value
@@ -380,7 +387,7 @@ export class EvaluacionComponent implements OnInit {
   }
 
 
-  // MODIFICADO: Obtener resumen completo de progreso
+  // Obtener resumen completo de progreso
   getProgressSummary(): { completed: number, total: number, sections: any[] } {
     const motivationType = this.evaluacionForm.get('motivationType')?.value
     let sections: Array<{
@@ -431,7 +438,7 @@ export class EvaluacionComponent implements OnInit {
     }
     sections.push(appearanceSection)
 
-    // MODIFICADO: Evaluación final solo disponible cuando secciones principales están completas
+    // Evaluación final solo disponible cuando secciones principales están completas
     sections.push({
       name: 'Evaluación Final',
       completed: this.isFinalMotivationComplete(),
@@ -447,7 +454,7 @@ export class EvaluacionComponent implements OnInit {
     return { completed, total, sections }
   }
 
-  // NUEVO: Obtener detalles de progreso de Inexistencia
+  // Obtener detalles de progreso de Inexistencia
   private getNonexistenceProgressDetails(): any[] {
     const nonexistence = this.evaluacionForm.get('nonexistinence')?.value
     return [
@@ -462,7 +469,7 @@ export class EvaluacionComponent implements OnInit {
     ]
   }
 
-  // NUEVO: Obtener detalles de progreso de Insuficiencia
+  // Obtener detalles de progreso de Insuficiencia
   private getInsufficiencyProgressDetails(): any[] {
     const insufficiency = this.evaluacionForm.get('insufficiency')?.value
     return [
@@ -477,7 +484,7 @@ export class EvaluacionComponent implements OnInit {
     ]
   }
 
-  // NUEVO: Obtener detalles de progreso de Apariencia
+  // Obtener detalles de progreso de Apariencia
   private getAppearanceProgressDetails(): any[] {
     const appearance = this.evaluacionForm.get('appearance')?.value
     return [
@@ -488,7 +495,7 @@ export class EvaluacionComponent implements OnInit {
     ]
   }
 
-  // NUEVO: Obtener progreso de subsecciones de Apariencia
+  // Obtener progreso de subsecciones de Apariencia
   private getAppearanceSubsectionsProgress(): any[] {
     const appearance = this.evaluacionForm.get('appearance')?.value
     const subsections = [
@@ -525,7 +532,7 @@ export class EvaluacionComponent implements OnInit {
     return subsections
   }
 
-  // NUEVO: Obtener detalles de progreso de Incoherencia
+  // Obtener detalles de progreso de Incoherencia
   private getIncoherenceProgressDetails(): any[] {
     const incoherence = this.evaluacionForm.get('appearance.incoherence')?.value
     return [
@@ -548,7 +555,7 @@ export class EvaluacionComponent implements OnInit {
     ]
   }
 
-  // NUEVO: Obtener detalles de progreso de Inatinencia
+  // Obtener detalles de progreso de Inatinencia
   private getInatinenceProgressDetails(): any[] {
     const inatinence = this.evaluacionForm.get('appearance.inatinence')?.value
     return [
@@ -563,7 +570,7 @@ export class EvaluacionComponent implements OnInit {
     ]
   }
 
-  // NUEVO: Obtener detalles de progreso de Incomprensibilidad
+  // Obtener detalles de progreso de Incomprensibilidad
   private getIncomprehensibilityProgressDetails(): any[] {
     const incomprehensibility = this.evaluacionForm.get('appearance.incomprehensibility')?.value
     return [
@@ -578,7 +585,7 @@ export class EvaluacionComponent implements OnInit {
     ]
   }
 
-  // NUEVO: Obtener detalles de progreso de Incongruencia
+  // Obtener detalles de progreso de Incongruencia
   private getIncongruityProgressDetails(): any[] {
     const incongruity = this.evaluacionForm.get('appearance.incongruity')?.value
     return [
@@ -601,7 +608,7 @@ export class EvaluacionComponent implements OnInit {
     ]
   }
 
-  // NUEVO: Obtener detalles de progreso de Evaluación Final
+  // Obtener detalles de progreso de Evaluación Final
   private getFinalMotivationProgressDetails(): any[] {
     const finalDeficit = this.evaluacionForm.get('finalMotivationDeficit')?.value
     const finalReasons = this.evaluacionForm.get('finalMotivationReasons')?.value
@@ -618,7 +625,7 @@ export class EvaluacionComponent implements OnInit {
     ]
   }
 
-  // NUEVO: Funciones auxiliares para el HTML
+  // Funciones auxiliares para el HTML
   getSectionIcon(section: any): string {
     switch (section.type) {
       case 'main': return '🎯'
@@ -765,7 +772,7 @@ export class EvaluacionComponent implements OnInit {
           // Esto poblará el objeto buttonStates con los datos de calificación.
           this.loadCalificaciones(data);
 
-          // NUEVO: Guardar estado inicial después de cargar datos
+          // Guardar estado inicial después de cargar datos
           setTimeout(() => {
             this.saveInitialFormState();
             this.changeDetectorRef.detectChanges();
@@ -794,7 +801,7 @@ export class EvaluacionComponent implements OnInit {
     setRadioValues(data)
   }
 
-  // MODIFICADO: Función submitForm con validación estricta
+  // Función submitForm con validación estricta
   submitForm() {
     // Quitar validaciones estrictas temporalmente
     // NUEVO: Validación específica para estudiantes - REQUIERE TODAS LAS SECCIONES
@@ -904,11 +911,11 @@ export class EvaluacionComponent implements OnInit {
 
   guardarYContinuar(event: Event) {
     event.preventDefault();
-    
+
     // Quitar validaciones estrictas temporalmente
     // Primero guardar
     this.submitForm();
-    
+
     // Luego navegar después de un breve delay para asegurar que se guarde
     setTimeout(() => {
       this.router.navigate(["/evaluacion2"], {
@@ -1082,16 +1089,21 @@ export class EvaluacionComponent implements OnInit {
     })
   }
 
+  // ✅ LÓGICA USERDATA ACTUALIZADA
   loadUserData() {
     this.afAuth.user.subscribe((user) => {
       if (user) {
-        this.currentUser = this.firestore.collection("users").doc<User>(user.uid).valueChanges()
+        this.currentUser = this.firestore.collection("users").doc<UserData>(user.uid).valueChanges()
         this.currentUser.subscribe((userData) => {
-          if (userData && userData.role === "docente") {
+          // Asignamos el currentUserData centralizado
+          this.currentUserData = userData || null;
+
+          // Verificamos si es docente O si es admin (los admins pueden actuar como docentes)
+          if (userData && (userData.role === "docente" || userData.isAdmin)) {
             this.isDocente = true
             this.checkDocenteSaved()
           } else {
-            // NUEVO: Configurar para estudiantes
+            // Configurar para estudiantes
             this.isDocente = false
             setTimeout(() => {
               this.saveInitialFormState()

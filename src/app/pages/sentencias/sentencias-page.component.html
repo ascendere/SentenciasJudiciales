@@ -11,6 +11,7 @@
     <h4>SISTEMA JURÍDICO AVANZADO DE SENTENCIAS DE PRIMER NIVEL EN EL ECUADOR</h4>
   </div>
 
+  <!-- Formulario de creación de Nueva Sentencia -->
   <form (ngSubmit)="submitForm()">
 
     <div class="dato-sent">
@@ -39,13 +40,28 @@
         readonly><br>
     </div>
 
+    <!-- BUSCADOR DE DOCENTE (AUTOCOMPLETE) -->
+    <!-- Permite buscar docentes activos para asignar la revisión -->
     <div class="dato-sent">
-      <label class="label-docente" for="teacher">4. Docente:</label><br>
-      <select class="docente" id="teacher" name="teacher" [(ngModel)]="sentencia.nombre_docente"
-        (change)="actualizarCorreoDocente()" required>
-        <option *ngFor="let docente of docentesLista" [value]="docente.name">{{ docente.name }}</option>
-      </select>
+      <label class="label-docente" for="teacher-search">4. Docente (Buscar):</label><br>
+      <div class="autocomplete-container">
+        <input type="text" id="teacher-search" name="teacher-search" class="docente-input"
+          placeholder="Escriba el nombre del docente..." [(ngModel)]="searchTermDocente" (input)="filterDocentes()"
+          (focus)="showDropdown = true" (blur)="hideDropdown()" autocomplete="off" required>
 
+        <!-- Lista desplegable -->
+        <ul class="autocomplete-list" *ngIf="showDropdown && filteredDocentes.length > 0">
+          <li *ngFor="let docente of filteredDocentes" (click)="selectDocente(docente)">
+            <strong>{{ docente.name }}</strong> <br>
+            <small style="color: #666;">{{ docente.email }}</small>
+          </li>
+        </ul>
+
+        <!-- Mensaje si no hay resultados -->
+        <div class="no-results" *ngIf="showDropdown && filteredDocentes.length === 0">
+          No se encontraron docentes.
+        </div>
+      </div>
     </div>
 
     <div class="dato-sent">
@@ -63,7 +79,7 @@
     <div class="dato-sent-file">
       <label for="archivo"> Carga de sentencia: </label><br>
       <label for="archivo" id="cargar-archivo-label">
-        <img src="../../../assets/images/Cargar.png" alt="">
+        <img src="../../../assets/images/Cargar.png" alt="Cargar PDF">
       </label>
       <input type="file" id="archivo" name="archivo" (change)="onFileSelected($event)" accept="application/pdf"
         style="display: none;">

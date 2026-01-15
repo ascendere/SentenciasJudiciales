@@ -12,11 +12,12 @@
 
     <div *ngIf="analisis2Form.disabled" class="locked-message">
       Esta sentencia está bloqueada y no puede ser editada.
-  </div>
+    </div>
 
-  <h3 class="titulo-analisis">Análisis de las argumentaciones de la sentencia</h3>
-  <p style="font-family: Poppins;"> Todas las preguntas marcadas con un asterisco (*) son obligatorias. </p>
+    <h3 class="titulo-analisis">Análisis de las argumentaciones de la sentencia</h3>
+    <p style="font-family: Poppins;"> Todas las preguntas marcadas con un asterisco (*) son obligatorias. </p>
 
+    <!-- Loop de Secciones: Genera dinámicamente los campos de texto para las 7 secciones del análisis -->
     <div class="analisis" *ngFor="let section of [
       {id: 'narracion_hechos', title: '1. Narración de los hechos *'},
       {id: 'problema_juridico', title: '2. Problema jurídico *'},
@@ -26,15 +27,15 @@
       {id: 'solucion_problema', title: '6. Solución al problema *'},
       {id: 'decision', title: '7. Decisión *'}
     ]; let i = index">
-    <div *ngIf="!isDocente && analisis2Form.get('saved')?.value" class="calificaciones">
-      <div class="calificacion-display" [ngClass]="{
+      <div *ngIf="!isDocente && analisis2Form.get('saved')?.value" class="calificaciones">
+        <div class="calificacion-display" [ngClass]="{
         'calificacion-correcta': getCalificacionValue(section.id + '_calificacion') === 'Correcto',
         'calificacion-incorrecta': getCalificacionValue(section.id + '_calificacion') === 'Incorrecto',
         'calificacion-no-calificado': getCalificacionValue(section.id + '_calificacion') === 'No Calificado'
       }">
-    {{ getCalificacionValue(section.id + '_calificacion') }}
+          {{ getCalificacionValue(section.id + '_calificacion') }}
+        </div>
       </div>
-    </div>
       <app-caja-texto [id]="section.id" [formControlName]="section.id" [titulo]="section.title">
       </app-caja-texto>
       <button class="rate" *ngIf="isDocente" type="button" (click)="toggleCalificar(section.id)">Calificar *</button>
@@ -74,11 +75,10 @@
     <div *ngIf="mostrarMensaje" class="alerta">
       <p>{{ mensajeError }}</p>
     </div>
-        <button class="custom-button" type="button" *ngIf="cargando">
+    <button class="custom-button" type="button" *ngIf="cargando">
       <div class="spinner"></div>
       <span class="button-text">Cargando...</span>
     </button>
     <button class="bttn-stnd" (click)="redirectToEvaluacion($event)" [disabled]="!docenteSaved">Evaluación</button>
   </div>
 </div>
-

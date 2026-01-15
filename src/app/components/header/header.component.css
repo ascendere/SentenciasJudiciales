@@ -60,12 +60,22 @@
 .exit button{
   background: none;
   border: none;
+  cursor: pointer; /* Agregado cursor pointer para UX */
 }
 
 .user-info {
   display: flex;
   align-items: center;
   cursor: pointer;
+}
+
+/* ✅ NUEVO: Estilo para el texto del periodo */
+.periodo-text {
+  font-size: 12px;
+  color: #FFAB02; /* Color acento para destacar */
+  font-weight: 300;
+  margin-top: 2px;
+  text-transform: uppercase; /* Opcional: mayúsculas para uniformidad */
 }
 
 .user-info img {

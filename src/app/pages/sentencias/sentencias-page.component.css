@@ -1,208 +1,278 @@
 body {
-    background: #E4E7EB;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+  background: #E4E7EB;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
 }
 
 .tittle-sent {
-    color: #000;
-    text-align: center;
-    font-family: Poppins;
-    font-size: 20px;
-    font-style: normal;
-    font-weight: 600;
-    line-height: normal;
+  color: #000;
+  text-align: center;
+  font-family: Poppins;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
 }
 
 .inputs-sent {
-    display: flex;
-    flex-direction: column;
-    background: #b0b7c53e;
-    height: auto;
-    margin: 25px 200px 0px 200px;
-    border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  background: #b0b7c53e;
+  height: auto;
+  margin: 25px 200px 0px 200px;
+  border-radius: 10px;
+  padding-bottom: 20px;
+  /* Añadido un poco de espacio abajo */
 }
 
 .dato-sent {
-    margin: 10px 50px 20px 50px;
-    color: #000;
-    font-family: Poppins;
-    font-size: 16px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: normal;
+  margin: 10px 50px 20px 50px;
+  color: #000;
+  font-family: Poppins;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
 }
 
 .dato-sent input {
-    width: 100%;
-    height: 20px;
-    border-radius: 5px;
+  width: 100%;
+  height: 30px;
+  /* Ajustado ligeramente para mejor tacto */
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  /* Borde añadido para input */
+  padding-left: 5px;
 }
 
+/* ESTILOS DEL BUSCADOR (AUTOCOMPLETE) */
+.autocomplete-container {
+  position: relative;
+  width: 100%;
+}
+
+.docente-input {
+  width: 100%;
+  height: 35px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  padding-left: 10px;
+  font-family: Poppins;
+}
+
+.autocomplete-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 0 0 5px 5px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.autocomplete-list li {
+  padding: 10px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+  font-family: Poppins;
+  font-size: 14px;
+}
+
+.autocomplete-list li:hover {
+  background-color: #e3f2fd;
+}
+
+.no-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  padding: 10px;
+  border: 1px solid #ccc;
+  color: #666;
+  font-size: 14px;
+  font-family: Poppins;
+  z-index: 1000;
+}
+
+/* Fin Estilos Buscador */
+
 .dato-sent-file {
-    margin: 5px 50px 10px 40px;
-    color: #000;
-    font-family: Poppins;
-    font-size: 16px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: normal;
-    text-align: center;
+  margin: 5px 50px 10px 40px;
+  color: #000;
+  font-family: Poppins;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  text-align: center;
 }
 
 .dato-sent-file p {
-    color: #000;
-    text-align: center;
-    font-family: Poppins;
-    font-size: 10px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: normal;
-    margin-top: -25px;
+  color: #000;
+  text-align: center;
+  font-family: Poppins;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+  margin-top: -25px;
 }
 
-.label-docente{
-    color: #000;
-    font-family: Poppins;
-    font-size: 16px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: normal;
+.label-docente {
+  color: #000;
+  font-family: Poppins;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
 }
 
-.docente{
-    width: 100%;
-    background-color: #fff;
-    border-radius: 5px;
+.save {
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  flex-direction: column;
 }
 
-.save{
-    align-items: center;
-    justify-content: center;
-    display: flex;
-    flex-direction: column;
-}
-
-.save .bttn-stnd{
-    margin-bottom: 14px;
+.save .bttn-stnd {
+  margin-bottom: 14px;
 }
 
 .alert-content {
-    position: absolute; /* Cambiado a absoluto */
-    top: 10px; /* Ajusta esta posición según sea necesario */
-    right: 20px; /* Ajusta esta posición según sea necesario */
-    z-index: 1000; /* Asegúrate de que esté por encima de otros elementos */
-    display: flex;
-    justify-content: end;
-    margin-top: 100px;
-    display: flex;
-    flex-direction: column;
+  position: absolute;
+  /* Cambiado a absoluto */
+  top: 10px;
+  /* Ajusta esta posición según sea necesario */
+  right: 20px;
+  /* Ajusta esta posición según sea necesario */
+  z-index: 1000;
+  /* Asegúrate de que esté por encima de otros elementos */
+  display: flex;
+  justify-content: end;
+  margin-top: 100px;
+  display: flex;
+  flex-direction: column;
 }
 
 .alerta {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    width: 200px; /* Ajusta el ancho según sea necesario */
-    padding: 10px;
-    background: #BE3144;
-    color: #FFF;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    text-align: center;
-    cursor: pointer;
-    text-align: left;
-    margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 200px;
+  /* Ajusta el ancho según sea necesario */
+  padding: 10px;
+  background: #BE3144;
+  color: #FFF;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  cursor: pointer;
+  text-align: left;
+  margin-bottom: 15px;
 }
 
 .alerta p {
-    margin: 0;
-    font-family: Poppins, sans-serif;
-    font-size: 14px;
+  margin: 0;
+  font-family: Poppins, sans-serif;
+  font-size: 14px;
 }
 
-.msg-file-status{
-    text-align: center;
-    padding-top: 20px;
+.msg-file-status {
+  text-align: center;
+  padding-top: 20px;
 }
 
 /* Estilos para el mensaje cuando no hay archivo */
 .sin-archivo {
-    margin-top: -20px;
-    color: red;
-    font-family: Poppins;
-    font-size: 14px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: normal;
-  }
-  
-  /* Estilos para el mensaje cuando el archivo está cargado */
-  .archivo-subido {
-    margin-top: -20px;
-    color: #044170;
-    font-family: Poppins;
-    font-size: 14px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: normal;
-  }
-  
-  .mensaje-exito {
-    background-color: #4CAF50;
-    color: white;
-    padding: 30px;
-    margin-top: 10px;
-    border-radius: 5px;
-    text-align: center;
-    font-family: Poppins;
-    font-size: 14px;
-    font-style: normal;
-    font-weight: 400;
+  margin-top: -20px;
+  color: red;
+  font-family: Poppins;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+}
+
+/* Estilos para el mensaje cuando el archivo está cargado */
+.archivo-subido {
+  margin-top: -20px;
+  color: #044170;
+  font-family: Poppins;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: normal;
+}
+
+.mensaje-exito {
+  background-color: #4CAF50;
+  color: white;
+  padding: 30px;
+  margin-top: 10px;
+  border-radius: 5px;
+  text-align: center;
+  font-family: Poppins;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+}
+
+.custom-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  background-color: #004274;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.custom-button:hover {
+  background-color: #004274;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 5px solid #ffffff;
+  border-top: 3px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 10px;
+}
+
+.button-text {
+  font-weight: bold;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
   }
 
-  .custom-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 5px 10px;
-    background-color: #004274;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s;
+  100% {
+    transform: rotate(360deg);
   }
-  
-  .custom-button:hover {
-    background-color: #004274;
-  }
-  
-  .spinner {
-    width: 20px;
-    height: 20px;
-    border: 5px solid #ffffff;
-    border-top: 3px solid transparent;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-right: 10px;
-  }
-  
-  .button-text {
-    font-weight: bold;
-  }
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
+}
 
-  .input-info {
-    color: #666;
-    font-size: 0.875em;
-    margin-top: 0.25rem;
-    display: block;
-  }
+.input-info {
+  color: #666;
+  font-size: 0.875em;
+  margin-top: 0.25rem;
+  display: block;
+}

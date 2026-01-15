@@ -18,6 +18,8 @@ interface Sentencia {
   razon?: string;
   isLocked?: boolean;
   periodo_academico?: string;
+  fecha_creacion?: any;
+  fecha_actualizacion?: any;
 }
 
 @Component({
@@ -50,7 +52,16 @@ export class SentenciasPageComponent implements OnInit {
   mensajeExito: string = '';
   mostrarMensajeExito: boolean = false;
   archivo: File | null = null;
+
+  // VARIABLES PARA EL BUSCADOR DE DOCENTES
   docentesLista: any[] = [];
+  filteredDocentes: any[] = [];
+  searchTermDocente: string = '';
+  showDropdown: boolean = false;
+
+  // VARIABLES DE ROL
+  isAdmin: boolean = false;
+  currentUserRole: string | null = null;
 
   constructor(
     private afAuth: AngularFireAuth,
@@ -65,67 +76,89 @@ export class SentenciasPageComponent implements OnInit {
         this.firestore.collection('users').doc(user.uid).valueChanges().subscribe((userData: any) => {
           this.sentencia.nombre_estudiante = userData.name;
           this.sentencia.email_estudiante = userData.email;
+          // Guardamos si es admin o el rol
+          this.currentUserRole = userData.role;
+          this.isAdmin = userData.isAdmin === true;
         });
       }
     });
 
+    // CAMBIO: Quitamos el filtro de Firestore para 'isActive' porque el campo puede no existir.
+    // Traemos todos los docentes y filtramos en memoria.
     this.firestore
       .collection('users', ref => ref.where('role', '==', 'docente'))
       .valueChanges()
-      .pipe(map((docentes: any[]) => docentes.sort((a, b) => a.name.localeCompare(b.name))))
+      .pipe(
+        map((docentes: any[]) => {
+          // Filtro en memoria: Si no tiene campo, es activo. Solo excluimos si es explícitamente false.
+          const docentesActivos = docentes.filter(d => d.isActive !== false);
+          return docentesActivos.sort((a, b) => a.name.localeCompare(b.name));
+        })
+      )
       .subscribe(data => {
         this.docentesLista = data;
+        this.filteredDocentes = data; // Inicializar filtrados con todos los activos
       });
 
+    // También actualizamos el observable para que sea consistente
     this.docentes$ = this.firestore
       .collection('users', ref => ref.where('role', '==', 'docente'))
       .valueChanges()
       .pipe(
-        map((docentes: any[]) => docentes.sort((a, b) => a.name.localeCompare(b.name)))
+        map((docentes: any[]) => {
+          // Misma lógica de filtrado
+          const docentesActivos = docentes.filter(d => d.isActive !== false);
+          return docentesActivos.sort((a, b) => a.name.localeCompare(b.name));
+        })
       );
 
-      this.asignarPeriodoAcademico();
+    // CAMBIO: Ahora obtenemos el periodo real de la base de datos
+    this.obtenerPeriodoActivoDesdeBD();
   }
 
-asignarPeriodoAcademico() {
-  const hoy = new Date();
-  const mes = hoy.getMonth() + 1;
-  const anio = hoy.getFullYear();
-
-  let nombreBase = '';
-  let nombreCompleto = '';
-
-  if (mes >= 4 && mes <= 9) {
-    nombreBase = 'abril - agosto';
-    nombreCompleto = `${nombreBase} ${anio}`;
-  } else {
-    nombreBase = 'octubre - febrero';
-    const siguienteAnio = anio + 1;
-    nombreCompleto = `octubre ${anio} - febrero ${siguienteAnio}`;
+  // LÓGICA DEL BUSCADOR
+  filterDocentes() {
+    const term = this.searchTermDocente.toLowerCase();
+    this.filteredDocentes = this.docentesLista.filter(doc =>
+      doc.name.toLowerCase().includes(term) ||
+      doc.email.toLowerCase().includes(term)
+    );
+    this.showDropdown = true;
   }
 
-  this.firestore.collection('periodoAcademico', ref =>
-    ref.where('nombre', '==', nombreBase)
-  ).get().subscribe(snapshot => {
-    if (!snapshot.empty) {
-      // Si el periodo base existe, usamos el nombre completo con año
-      this.sentencia.periodo_academico = nombreCompleto;
-    } else {
-      console.warn(`El periodo académico "${nombreBase}" no está registrado en la base de datos.`);
-    }
-  });
-}
+  selectDocente(docente: any) {
+    this.searchTermDocente = docente.name; // Mostrar nombre en el input
+    this.sentencia.nombre_docente = docente.name;
+    this.sentencia.email_docente = docente.email; // Asignar correo automáticamente
+    this.showDropdown = false;
+  }
 
+  hideDropdown() {
+    // Pequeño delay para permitir el click en la opción antes de que desaparezca
+    setTimeout(() => {
+      this.showDropdown = false;
+    }, 200);
+  }
 
-
-
-  actualizarCorreoDocente() {
-    const docenteSeleccionado = this.docentesLista.find(doc => doc.name === this.sentencia.nombre_docente);
-    if (docenteSeleccionado) {
-      this.sentencia.email_docente = docenteSeleccionado.email;
-    } else {
-      this.sentencia.email_docente = '';
-    }
+  /**
+   * Obtiene el periodo académico activo desde la base de datos.
+   * Esto asegura que la sentencia se vincule al ciclo correcto.
+   */
+  obtenerPeriodoActivoDesdeBD() {
+    this.firestore.collection('periodoAcademico', ref =>
+      ref.where('activo', '==', true).limit(1)
+    ).get().subscribe(snapshot => {
+      if (!snapshot.empty) {
+        const data = snapshot.docs[0].data() as any;
+        this.sentencia.periodo_academico = data.nombre; // Ej: "octubre 2025 - febrero 2026"
+        // console.log('Periodo activo asignado:', this.sentencia.periodo_academico);
+      } else {
+        console.warn('No hay ningún periodo activo configurado en el panel de administración.');
+        this.sentencia.periodo_academico = 'Periodo No Definido';
+      }
+    }, error => {
+      console.error('Error al obtener el periodo:', error);
+    });
   }
 
   onFileSelected(event: any): void {
@@ -143,13 +176,40 @@ asignarPeriodoAcademico() {
     }
   }
 
+  /**
+   * Valida y envía el formulario de nueva sentencia.
+   * Realiza validaciones asíncronas:
+   * 1. Que el números de proceso no esté duplicado y aprobado.
+   * 2. Que exista un docente y archivo seleccionado.
+   */
   submitForm(): void {
     this.alertas = [];
     this.cargando = true;
 
+    // VALIDACIÓN ESTRICTA DEL NÚMERO DE PROCESO
+    if (!this.sentencia.numero_proceso || this.sentencia.numero_proceso.trim() === '') {
+      this.alertas.push('El número de proceso es obligatorio.');
+      this.cargando = false;
+      return;
+    }
+
+    // Validación del periodo
+    if (!this.sentencia.periodo_academico || this.sentencia.periodo_academico === 'Periodo No Definido') {
+      this.alertas.push('Error: No hay un periodo académico activo en el sistema. Contacte al administrador.');
+      this.cargando = false;
+      return;
+    }
+
     const checkArchivo = new Promise<void>((resolve) => {
       if (!this.archivo) {
         this.alertas.push('Debe seleccionar un archivo PDF.');
+      }
+      resolve();
+    });
+
+    const checkDocente = new Promise<void>((resolve) => {
+      if (!this.sentencia.nombre_docente || !this.sentencia.email_docente) {
+        this.alertas.push('Debe seleccionar un docente válido de la lista.');
       }
       resolve();
     });
@@ -166,7 +226,7 @@ asignarPeriodoAcademico() {
       });
     });
 
-    Promise.all([checkArchivo, checkNumeroProceso]).then(() => {
+    Promise.all([checkArchivo, checkDocente, checkNumeroProceso]).then(() => {
       if (this.alertas.length === 0) {
         this.uploadFileAndSaveSentencia();
       } else {
@@ -175,6 +235,9 @@ asignarPeriodoAcademico() {
     });
   }
 
+  /**
+   * Sube el archivo PDF a Firebase Storage y guarda los metadatos en Firestore.
+   */
   private uploadFileAndSaveSentencia(): void {
     const filePath = `sentencias/${this.archivo!.name}_${Date.now()}`;
     const fileRef = this.storage.ref(filePath);
@@ -184,7 +247,15 @@ asignarPeriodoAcademico() {
       finalize(() => {
         fileRef.getDownloadURL().subscribe(url => {
           this.sentencia.archivoURL = url;
-          this.firestore.collection('sentencias').add(this.sentencia)
+
+          // Guardamos fecha de creación para ordenamiento futuro
+          const sentenciaAGuardar = {
+            ...this.sentencia,
+            fecha_creacion: new Date(),
+            fecha_actualizacion: new Date()
+          };
+
+          this.firestore.collection('sentencias').add(sentenciaAGuardar)
             .then(() => {
               console.log('Sentencia added successfully!');
               this.mensajeExito = 'Sentencia guardada';

@@ -1,9 +1,10 @@
 <!-- login-page.component.html -->
+
 <body class="inicio-sesion">
   <div class="titulo">
     <h2>SISTEMA JURÍDICO AVANZADO DE SENTENCIAS DE PRIMER NIVEL EN EL ECUADOR</h2>
   </div>
-  
+
   <div class="flex-login">
     <div class="login">
       <div class="imputs-login">
@@ -11,13 +12,14 @@
         <!-- Botón UTPL -->
         <div *ngIf="!mostrarFormAlternativo">
           <button type="button" class="bttn-azure" (click)="loginWithAzure()">
-            <i class="fa-brands fa-microsoft"></i> 
+            <i class="fa-brands fa-microsoft"></i>
             Iniciar sesión con UTPL
           </button>
 
           <!-- Enlace para mostrar otros métodos -->
           <p class="change-form" style="margin-top: 20px;">
-            <a href="#" (click)="mostrarFormAlternativo = true">Si no cuenta con credenciales UTPL, inicie aquí con Gmail o Hotmail</a>
+            <a href="#" (click)="$event.preventDefault(); mostrarFormAlternativo = true">Si no cuenta con credenciales
+              UTPL, inicie aquí con Gmail o Hotmail</a>
           </p>
         </div>
 
@@ -35,9 +37,9 @@
           <!-- Formulario de inicio de sesión -->
           <form *ngIf="isLogin" class="txt" (ngSubmit)="login(email.value, password.value)">
             <label class="label-login" for="email">Email:</label><br>
-            <input class="input-login" type="email" #email required><br><br>
+            <input class="input-login" type="email" id="email" #email required><br><br>
             <label class="label-login" for="password">Contraseña:</label><br>
-            <input class="input-login" type="password" #password required><br><br>
+            <input class="input-login" type="password" id="password" #password required><br><br>
             <div class="bttnlo">
               <button class="bttn-stnd" type="submit">Iniciar sesión</button>
             </div>
@@ -46,11 +48,11 @@
           <!-- Formulario de registro -->
           <form *ngIf="!isLogin" class="txt" (ngSubmit)="register(regName.value, regEmail.value, regPassword.value)">
             <label class="label-login" for="regName">Nombres y Apellidos:</label><br>
-            <input class="input-login" type="text" #regName required><br><br>
+            <input class="input-login" type="text" id="regName" #regName required><br><br>
             <label class="label-login" for="regEmail">Email:</label><br>
-            <input class="input-login" type="email" #regEmail required><br><br>
+            <input class="input-login" type="email" id="regEmail" #regEmail required><br><br>
             <label class="label-login" for="regPassword">Contraseña:</label><br>
-            <input class="input-login" type="password" #regPassword required><br><br>
+            <input class="input-login" type="password" id="regPassword" #regPassword required><br><br>
             <button class="bttn-stnd" type="submit">Registrarse</button>
           </form>
 
@@ -71,5 +73,5 @@
       </div>
     </div>
     <img src="../../../assets/images/logo-inicio.png" alt="" class="img-sentencia">
-  </div> 
+  </div>
 </body>

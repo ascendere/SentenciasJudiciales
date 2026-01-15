@@ -5,12 +5,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
 import { Observable, of } from 'rxjs';
 import { switchMap, map } from 'rxjs/operators';
-
-interface User {
-  uid: string;
-  role: string;
-  [key: string]: any;
-}
+import { AuthService, UserData } from '../../services/auth.service';
 
 interface Analisis2 {
   narracion_hechos: string;
@@ -52,7 +47,11 @@ export class Analisis2Component implements OnInit {
   docenteSaved = false;
   dataLoaded = false;
   isDocente = false;
-  currentUser: Observable<User | null | undefined> = of(null);
+
+  // Usamos UserData importado y añadimos currentUserData
+  currentUser: Observable<UserData | null | undefined> = of(null);
+  currentUserData: UserData | null = null;
+
   calificarState: { [key: string]: boolean } = {};
   selectedButtons: { [key: string]: string } = {};
   cargando: boolean = false; // Nueva propiedad para controlar el estado de carga
@@ -113,6 +112,10 @@ export class Analisis2Component implements OnInit {
     });
   }
 
+  /**
+   * Verifica bloqueo de sentencia.
+   * Si 'locked' es true en Firestore, se deshabilita el formulario.
+   */
   checkLockStatus() {
     this.firestore.collection('locks').doc(this.numero_proceso).valueChanges().subscribe((data: any) => {
       if (data && data.locked) {
@@ -149,12 +152,21 @@ export class Analisis2Component implements OnInit {
     return this.analisis2Form.get(controlName)?.value || '';
   }
 
+  // LÓGICA USERDATA ACTUALIZADA
+  /**
+   * Carga datos de usuario y asigna permisos.
+   * Establece `isDocente` si el usuario es administrador o tiene rol 'docente'.
+   */
   loadUserData() {
     this.afAuth.user.subscribe(user => {
       if (user) {
-        this.currentUser = this.firestore.collection('users').doc<User>(user.uid).valueChanges();
+        this.currentUser = this.firestore.collection('users').doc<UserData>(user.uid).valueChanges();
         this.currentUser.subscribe(userData => {
-          if (userData && userData.role === 'docente') {
+          // Asignamos el currentUserData centralizado
+          this.currentUserData = userData || null;
+
+          // Verificamos rol de docente o si es admin
+          if (userData && (userData.role === 'docente' || userData.isAdmin)) {
             this.isDocente = true;
           }
         });
@@ -194,6 +206,10 @@ export class Analisis2Component implements OnInit {
     });
   }
 
+  /**
+   * Guarda los datos de la sección 2 del análisis.
+   * Actualiza flags de 'saved' y maneja la recarga de página tras guardar.
+   */
   submitForm() {
     this.analisis2Form.patchValue({ saved: true });
     if (this.isDocente) {
@@ -212,20 +228,20 @@ export class Analisis2Component implements OnInit {
     this.isSubmitting = true;
     this.cargando = true;
     this.firestore.collection('analisis2').doc(this.numero_proceso).set(analisisData)
-    .then(() => {
-      this.saved = true;
-      this.cargando = false;
-      this.mostrarMensajeExito('Guardado con éxito');
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-    })
-    .catch(error => {
-      // console.error("Error saving document: ", error);
-      this.cargando = false;
-      this.mostrarMensajeError('Error al guardar. Por favor, intente de nuevo.');
-      this.isSubmitting = false;
-    });
+      .then(() => {
+        this.saved = true;
+        this.cargando = false;
+        this.mostrarMensajeExito('Guardado con éxito');
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      })
+      .catch(error => {
+        // console.error("Error saving document: ", error);
+        this.cargando = false;
+        this.mostrarMensajeError('Error al guardar. Por favor, intente de nuevo.');
+        this.isSubmitting = false;
+      });
     // } else {
     //   this.isSubmitting = false;  
     //   this.mostrarMensajeError('Por favor, llene todos los campos antes de guardar');
@@ -238,7 +254,7 @@ export class Analisis2Component implements OnInit {
     setTimeout(() => {
       this.mostrarMensaje = false;
       this.mensajeError = '';
-    }, 5000); 
+    }, 5000);
   }
 
   mostrarMensajeError(mensaje: string) {
@@ -272,11 +288,11 @@ export class Analisis2Component implements OnInit {
 
   guardarYContinuar(event: Event) {
     event.preventDefault();
-    
+
     // Quitar validaciones estrictas temporalmente
     // Primero guardar
     this.submitForm();
-    
+
     // Luego navegar después de un breve delay para asegurar que se guarde
     setTimeout(() => {
       this.router.navigate(['/evaluacion'], {
@@ -290,27 +306,27 @@ export class Analisis2Component implements OnInit {
     }, 1500);
   }
 
-checkDocenteSaved() {
-  this.firestore.collection('analisis2').doc(this.numero_proceso).valueChanges()
-    .subscribe((data: any) => {
-      if (data && data.saved) {
-        this.docenteSaved = data.docenteSaved || false;
-      }
-    });
-}
+  checkDocenteSaved() {
+    this.firestore.collection('analisis2').doc(this.numero_proceso).valueChanges()
+      .subscribe((data: any) => {
+        if (data && data.saved) {
+          this.docenteSaved = data.docenteSaved || false;
+        }
+      });
+  }
 
-toggleCalificar(section: string) {
-  this.calificarState[section] = !this.calificarState[section];
-}
+  toggleCalificar(section: string) {
+    this.calificarState[section] = !this.calificarState[section];
+  }
 
-setCalificacion(sectionId: string, calificacion: string) {
-  this.analisis2Form.get(sectionId + '_calificacion')?.setValue(calificacion);
-  this.selectedButtons[sectionId] = calificacion;
-}
+  setCalificacion(sectionId: string, calificacion: string) {
+    this.analisis2Form.get(sectionId + '_calificacion')?.setValue(calificacion);
+    this.selectedButtons[sectionId] = calificacion;
+  }
 
-getCalificacionValue(controlName: string): string {
-  const control = this.analisis2Form.get(controlName);
-  return control && control.value ? control.value : 'No Calificado';
-}
+  getCalificacionValue(controlName: string): string {
+    const control = this.analisis2Form.get(controlName);
+    return control && control.value ? control.value : 'No Calificado';
+  }
 
 }

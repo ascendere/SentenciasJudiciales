@@ -1,34 +1,34 @@
 .datos-est {
-    color: var(--1, #172D5A);
-    text-align: center;
-    font-family: Poppins;
-    font-size: 15px;
-    font-style: normal;
-    font-weight: 600;
-    line-height: normal;
-    border-bottom: solid 7px #B3B3B3;
-    border-top: solid 7px #FFAB02;
-    margin: 15px 40px 15px 40px;
+  color: var(--1, #172D5A);
+  text-align: center;
+  font-family: Poppins;
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+  border-bottom: solid 7px #B3B3B3;
+  border-top: solid 7px #FFAB02;
+  margin: 15px 40px 15px 40px;
 }
 
 .analisis-eva .bttn-stnd {
-    background: none;
-    border: none;
-    box-shadow: none;
-    color: var(--B3B3B3, #B3B3B3);
-    text-align: center;
-    font-family: Poppins;
-    font-size: 25px;
-    font-style: normal;
-    font-weight: 600;
-    line-height: normal;
-    background-color: none;
-    border-radius: 20px 20px 0px 0px;
-    width: 600px;
-    margin: 0px 60px 0px 60px;
-  }
+  background: none;
+  border: none;
+  box-shadow: none;
+  color: var(--B3B3B3, #B3B3B3);
+  text-align: center;
+  font-family: Poppins;
+  font-size: 25px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+  background-color: none;
+  border-radius: 20px 20px 0px 0px;
+  width: 600px;
+  margin: 0px 60px 0px 60px;
+}
 
-.bttn-stnd-delete{
+.bttn-stnd-delete {
   margin: 20px 0px 20px 0px;
   background: #EE4E4E;
   color: #FFF;
@@ -43,39 +43,46 @@
   padding: 10px 20px;
   border: none;
   display: flex;
-  transition: background-color 0.3s ease; 
+  transition: background-color 0.3s ease;
 }
 
-.bttn-stnd-delete:hover{
+.bttn-stnd-delete:hover {
   background: #C80036;
+}
+
+.bttn-stnd-delete:disabled {
+  background-color: #ffcccc;
+  color: #888;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .pa {
   border-bottom: solid 1px #222940;
-  min-height: 460px; /* Cambiamos height por min-height */
+  min-height: 460px;
   display: flex;
   flex-direction: column;
 }
 
-.line{
-  border-top: 3px solid black; /* Puedes ajustar el color y el grosor de la línea según tus preferencias */
+.line {
+  border-top: 3px solid black;
   margin: 20px 0;
 }
 
 .datos-est {
-color: var(--1, #172D5A);
-text-align: center;
-font-family: Poppins;
-font-size: 15px;
-font-style: normal;
-font-weight: 600;
-line-height: normal;
-border-bottom: solid 7px #B3B3B3;
-border-top: solid 7px #FFAB02;
-margin: 15px 40px 15px 40px;
+  color: var(--1, #172D5A);
+  text-align: center;
+  font-family: Poppins;
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+  border-bottom: solid 7px #B3B3B3;
+  border-top: solid 7px #FFAB02;
+  margin: 15px 40px 15px 40px;
 }
 
-.bttn-sgt{
+.bttn-sgt {
   margin: 30px 0px 0px 10px;
 }
 
@@ -98,7 +105,7 @@ margin: 15px 40px 15px 40px;
   border-bottom: solid 1px #044170;
 }
 
-.bttn{
+.bttn {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -166,7 +173,8 @@ margin: 15px 40px 15px 40px;
 }
 
 .calificacion-correcta {
-  background-color: #4CAF50; /* Verde */
+  background-color: #4CAF50;
+  /* Verde */
   color: white;
   font-family: Poppins;
   font-size: 16px;
@@ -174,22 +182,24 @@ margin: 15px 40px 15px 40px;
 }
 
 .calificacion-incorrecta {
-  background-color: #f44336; /* Rojo */
+  background-color: #f44336;
+  /* Rojo */
   color: white;
   font-family: Poppins;
   font-size: 16px;
   font-style: normal;
 }
 
-.calificacion-no-calificado{
-  background-color: none; /* Rojo */
+.calificacion-no-calificado {
+  background-color: none;
+  /* Rojo */
   color: rgb(0, 0, 0);
   font-family: Poppins;
   font-size: 16px;
-  font-style: normal; 
+  font-style: normal;
 }
 
-.calificaciones{
+.calificaciones {
   display: flex;
   justify-content: end;
 }
@@ -236,8 +246,13 @@ margin: 15px 40px 15px 40px;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .pregunta-container,
@@ -252,15 +267,18 @@ margin: 15px 40px 15px 40px;
   flex-wrap: wrap;
   gap: 10px;
   flex-direction: column;
-  width: 19%;
+  width: 100%;
+  /* Cambiado para que el contenedor sea ancho */
   text-align: center;
   margin-bottom: 10px;
+  align-items: center;
+  /* Centrar */
 }
 
 .bttn-stnd-delete,
 .bttn-stnd,
 .rate {
-  margin: 0; /* Eliminamos los márgenes individuales */
+  margin: 0;
 }
 
 .bttn-stnd-delete,
@@ -299,4 +317,16 @@ margin: 15px 40px 15px 40px;
 
 .bttn-stnd:hover {
   background: #022d4e;
+}
+
+.bttn-stnd:disabled {
+  background-color: #cccccc;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.add-btn-container {
+  display: flex;
+  justify-content: center;
+  padding: 0 20px;
 }

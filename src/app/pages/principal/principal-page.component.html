@@ -1,237 +1,422 @@
 <app-header></app-header>
 
-<div class="titulo">
-  <h2>Sistema Jurídico Avanzado de Sentencias de Primer Nivel en Ecuador</h2>
-  <button *ngIf="userRole == 'estudiante'" class="bttn-stnd" (click)="redirectToNuevaSentencia()">Nueva
-    Sentencia</button>
+<!-- INDICADOR DE CARGA GLOBAL -->
+<div *ngIf="isLoading" class="loading-overlay">
+  <div class="spinner"></div>
+  <p>Cargando datos...</p>
 </div>
 
-<!-- Solo visible para el administrador -->
-<!-- Carga de docente en CSV -->
-<div *ngIf="userRole === 'administrador'" class="admin-panel">
-  <label for="csvInput" class="btn-cargar-docentes">Cargar docentes CSV</label>
-  <input type="file" id="csvInput" (change)="onFileSelected($event)" accept=".csv" style="display: none;">
-</div>
-<!-- Generacón de reporte de las sentencias -->
-<div *ngIf="userRole === 'administrador'" class="admin-panel">
-  <button class="btn-cargar-docentes" (click)="generarReporteExcel()">Generar reporte de sentencias (Excel)</button >
-</div>
-<div *ngIf="alert"
-  [ngClass]="{'success-notification': alertype === 'success', 'error-notification': alertype === 'error'}"
-  class="notification-box">
-  {{ alert }}
-</div>
+<div style="position: relative; max-width: 1400px; margin: 0 auto; padding-top: 10px;">
 
-<div class="search-bar" *ngIf="userRole === 'docente' || userRole === 'administrador'">
-  <input class="search" type="text" [(ngModel)]="searchText" (input)="onSearchTextChanged()"
-    [placeholder]="userRole === 'administrador' ? 'Buscar sentencia' : 'Buscar por nombre de estudiante'" />
-  <button *ngIf="isSearchMode" (click)="limpiarBusquedaGeneral()" class="bttn-clear" style="margin-left: 10px;">Limpiar búsqueda</button>
-</div>
-
-<!-- Indicador de búsqueda activa -->
-<div *ngIf="isSearchMode && searchResults.length > 0" class="search-indicator" style="background-color: #e3f2fd; padding: 10px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #2196f3;">
-  <strong>Búsqueda activa:</strong> Mostrando {{ searchResults.length }} resultado(s) para "{{ searchText }}"
-</div>
-
-<div *ngIf="userRole === 'estudiante'" class="busqueda-proceso">
-  <div class="input-busqueda">
-    <div class="input-container">
-      <input type="text" [(ngModel)]="numeroProcesoBusqueda" placeholder="Buscar por número de proceso"
-        (keypress)="validarBusquedaProceso($event)" (input)="formatearBusquedaProceso($event)" class="input-proceso">
-      <small class="input-info">
-        Únicamente se admite números y guiones "-"
-      </small>
-    </div>
-    <button (click)="buscarPorNumeroProceso()" class="bttn-search">Buscar</button>
-    <button *ngIf="sentenciaEncontrada" (click)="limpiarBusqueda()" class="bttn-clear">Limpiar</button>
+  <!-- ALERTA DE USUARIO INACTIVO -->
+  <div *ngIf="showInactiveAlert" class="inactive-alert">
+    ⚠️ Su cuenta está inactiva. Por favor, comuníquese con el administrador para activar su acceso.
   </div>
 
-  <!-- Mensaje de estado de búsqueda -->
-  <div *ngIf="mostrarMensajeBusqueda" class="mensaje-busqueda"
-    [ngClass]="{'mensaje-error': !sentenciaEncontrada, 'mensaje-exito': sentenciaEncontrada}">
-    {{ mensajeBusqueda }}
-  </div>
+  <!-- TÍTULO Y BOTONES PRINCIPALES (VISTA NORMAL) -->
+  <div class="titulo" *ngIf="!showAdminPanel">
+    <h2>Sistema Jurídico Avanzado de Sentencias de Primer Nivel en Ecuador</h2>
 
-  <!-- Resultados de la búsqueda -->
-  <div *ngIf="sentenciaEncontrada" class="resultado-busqueda">
-    <div class="sentencia-encontrada">
-      <h3>Sentencia encontrada:</h3>
-      <p>
-        <span [ngClass]="{
-          'estado-proceso': !sentenciaEncontrada.isLocked,
-          'estado-finalizada': sentenciaEncontrada.isLocked
-        }">
-          {{ getEstadoBloqueo(sentenciaEncontrada) }}
-        </span>
-      </p>
-    </div>
-  </div>
-</div>
-
-<div class="sentencias">
-
-  <div *ngIf="pagedSentencias.length === 0 && !isSearchMode && !loadingPage" class="no-sentencias">
-    No hay sentencias disponibles.
-  </div>
-
-  <div *ngIf="pagedSentencias.length === 0 && isSearchMode && !loadingPage" class="no-sentencias">
-    No se encontraron sentencias que coincidan con "{{ searchText }}".
-  </div>
-
-  <div *ngIf="loadingPage" class="no-sentencias">
-    Cargando sentencias...
-  </div>
-
-  <div *ngFor="let sentencia of pagedSentencias" class="sent">
-
-    <div class="proceso">
-      <p><strong>Numero de Proceso:</strong> {{ sentencia.numero_proceso }}</p>
-    </div>
-
-    <div class="datos">
-
-      <div class="text-dat">
-        <p><strong>Asunto:</strong> {{ sentencia.asunto }}</p>
-      </div>
-
-      <div class="text-dat">
-        <p><strong>Estudiante:</strong> {{ sentencia.nombre_estudiante }}</p>
-      </div>
-
-      <div class="text-dat">
-        <p><strong>Docente:</strong> {{ sentencia.nombre_docente }}</p>
-      </div>
-
-      <div class="text-dat">
-        <p *ngIf="sentencia.estado == 'aceptar'"> <strong>Estado:</strong> Aceptada</p>
-        <p *ngIf="sentencia.estado == 'negar'"> <strong>Estado:</strong> Negada</p>
-        <p *ngIf="!sentencia.estado"> <strong>Estado:</strong> Esperando validación</p>
-      </div>
-    </div>
-
-    <div class="more">
-      <button class="bttn-stnd" (click)="redirectToAnalisis(sentencia)" [disabled]="sentencia?.estado !== 'aceptar'">
-        Ver más</button>
-      <a *ngIf="userRole === 'docente' && sentencia.archivoURL" [href]="sentencia.archivoURL" target="_blank"
-        class="bttn-download">
-        Descargar PDF
-      </a>
-    </div>
-    <div class="bttn-acetp" *ngIf="userRole === 'docente' || userRole === 'administrador'">
-      <!-- Buttons for pending sentences -->
-      <ng-container *ngIf="!sentencia.estado">
-        <!-- Nueva lógica para deshabilitar botones y mostrar mensaje -->
-        <ng-container *ngIf="!sentencia.isLockedForAcceptance; else lockedButtons">
-          <button (click)="abrirRazon(sentencia, 'aceptar')" class="bttn-accept">Aceptar</button>
-          <button (click)="abrirRazon(sentencia, 'negar')" class="bttn-reject">Negar</button>
-        </ng-container>
-        <ng-template #lockedButtons>
-          <div class="locked-section" style="display: flex; flex-direction: column; align-items: center;">
-            <div class="locked-btns" style="display: flex; flex-direction: row; align-items: center;">
-              <button class="bttn-accept" [disabled]="true">Aceptar</button>
-              <button class="bttn-reject" [disabled]="true">Negar</button>
-            </div>
-            <p class="locked-message">Este número de proceso ya ha sido aceptado.</p>
-          </div>
-        </ng-template>
-      </ng-container>
-
-      <!-- Edit button for sentences with existing status -->
-      <button *ngIf="sentencia.estado" (click)="abrirEdicionEstado(sentencia)" class="bttn-edit">
-        Editar estado
-      </button>
-    </div>
-    <!-- O si prefieres mantener el método original, asegúrate de que el número de proceso sea único -->
-    <button class="bttn-edit" style="margin-top: 5px;"
-      (click)="editarSentencia(sentencia.numero_proceso, sentencia.email_estudiante, sentencia.email_docente)">Editar Sentencia</button>
-
-    <div class="overlay" *ngIf="showEditarEstadoOverlay">
-      <div class="overlay-content">
-        <h3>Editar estado de la sentencia</h3>
-        <div class="estado-options">
-          <button [class.selected]="nuevoEstado === 'aceptar'" (click)="nuevoEstado = 'aceptar'" class="bttn-accept">
-            Aceptar
-          </button>
-          <button [class.selected]="nuevoEstado === 'negar'" (click)="nuevoEstado = 'negar'" class="bttn-reject">
-            Negar
-          </button>
-        </div>
-        <textarea [(ngModel)]="razonTexto" placeholder="Ingrese la nueva razón..." class="razon-textarea">
-        </textarea>
-        <div class="overlay-buttons">
-          <button (click)="guardarEdicionEstado()">Guardar</button>
-          <button (click)="cancelarEdicionEstado()">Cancelar</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Vista del estudiante -->
-    <div *ngIf="userRole !== 'docente' && sentencia.estado" class="bttn-status">
-      <button (click)="openOverlay(sentencia)" class="bttn-download">Ver estado</button>
-    </div>
-    <!-- Overlay del estudiante -->
-    <div *ngIf="showOverlay" class="overlay">
-      <div class="overlay-content">
-        <div class="overlay-content-text">
-          <p *ngIf="selectedSentencia?.estado == 'aceptar'" class="bttn-accept">Sentencia aceptada</p>
-          <p *ngIf="selectedSentencia?.estado == 'negar'" class="bttn-reject">Sentencia negada</p>
-          <div class="reason-container">
-            <p class="razon-est" *ngIf="selectedSentencia?.razon">
-              <strong>Razón:</strong> {{ selectedSentencia?.razon }}
-            </p>
-            <p *ngIf="!selectedSentencia?.razon">
-              No se proporcionó una razón para esta decisión.
-            </p>
-          </div>
-        </div>
-        <div class="bttn-close">
-          <button (click)="closeOverlay()" class="bttn-stnd">Cerrar</button>
-        </div>
-      </div>
-    </div>
-    <!-- Overlay para razón -->
-    <div class="overlay" *ngIf="showRazonOverlay">
-      <div class="overlay-content">
-        <h3>Razón para {{ accionPendiente }} la sentencia</h3>
-        <textarea [(ngModel)]="razonTexto" placeholder="Ingrese la razón..."></textarea>
-        <div class="overlay-buttons">
-          <button (click)="guardarDecision()">Guardar</button>
-          <button (click)="cancelarDecision()">Cancelar</button>
-        </div>
-      </div>
-    </div>
-    <!-- Botón de eliminar solo para docentes -->
-    <button *ngIf="userRole === 'docente' || userRole === 'administrador'" (click)="confirmarEliminacion(sentencia)"
-      style="background: none; border: none;" title="Eliminar sentencia">
-      <p style="color: brown;"><i class="fa-solid fa-trash" style="color: brown;"></i> Eliminar Sentencia</p>
+    <!-- Botón Nueva Sentencia -->
+    <button *ngIf="currentUserData?.role == 'estudiante' || currentUserData?.isAdmin" class="bttn-stnd"
+      (click)="redirectToNuevaSentencia()">
+      Nueva Sentencia
     </button>
+
+    <!-- BARRA DE HERRAMIENTAS DE ADMIN -->
+    <div *ngIf="currentUserData?.isAdmin || currentUserData?.role === 'administrador'" class="admin-tools-container"
+      style="margin-top: 20px; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+
+      <!-- Dropdown de Vista (Se queda) -->
+      <div class="view-selector-container">
+        <label for="adminViewSelect" style="color: white; font-weight: bold; margin-right: 10px;">Vista:</label>
+        <select id="adminViewSelect" class="view-dropdown" [(ngModel)]="vistaAdminSeleccionada"
+          (change)="cambiarVistaAdmin()">
+          <option value="global">Vista Global (Todo)</option>
+          <option value="mias">Mis Asignaciones</option>
+        </select>
+      </div>
+
+      <!-- Botón Gestión de Usuarios (Se queda) -->
+      <button class="bttn-admin-tool dashboard-btn" (click)="toggleAdminView()">
+        <i class="fa-solid fa-users-gear"></i> Gestión de Usuarios
+      </button>
+
+      <!-- NUEVO BOTÓN: ADMINISTRAR (Lleva a la nueva página) -->
+      <!-- El botón de CSV se ha movido dentro de esta nueva página -->
+      <button class="bttn-admin-tool" style="background-color: #34495e;" routerLink="/administrar">
+        <i class="fa-solid fa-screwdriver-wrench"></i> Administrar
+      </button>
+
+      <!-- Botón de reporte Excel eliminado -->
+    </div>
+
   </div>
-  <!-- Overlay de confirmación para eliminar -->
-  <div class="overlay" *ngIf="sentenciaAEliminar">
-    <div class="overlay-content">
-      <h3>¿Está seguro de eliminar esta sentencia?</h3>
-      <div class="overlay-buttons">
-        <button class="bttn-accept" (click)="eliminarSentenciaConfirmada()">Sí, eliminar</button>
-        <button class="bttn-reject" (click)="cancelarEliminacion()">Cancelar</button>
+
+  <!-- Notificaciones -->
+  <div *ngIf="alert"
+    [ngClass]="{'success-notification': alertype === 'success', 'error-notification': alertype === 'error'}"
+    class="notification-box">
+    {{ alert }}
+  </div>
+
+  <!-- ========================================== -->
+  <!--          DASHBOARD DE ADMIN                -->
+  <!-- Vista exclusiva para administradores donde gestionan usuarios -->
+  <!-- ========================================== -->
+  <div *ngIf="showAdminPanel && currentUserData?.isAdmin" class="admin-dashboard-container fade-in">
+
+    <!-- CABECERA CORREGIDA: Botón Volver + Título + FILTRO + Buscador -->
+    <div class="admin-header">
+      <div class="header-left">
+        <button class="bttn-admin-toggle back-btn" (click)="toggleAdminView()" title="Volver a Sentencias">
+          <i class="fa-solid fa-arrow-left"></i> Volver
+        </button>
+        <h3><i class="fa-solid fa-users"></i> Directorio de Usuarios</h3>
+      </div>
+
+      <!-- NUEVO: Grupo de herramientas derecha (Filtro + Buscador + CSV) -->
+      <div class="header-tools">
+
+        <!-- Botón Cargar Docentes CSV eliminado -->
+
+        <!-- Filtro por Rol -->
+        <select class="role-filter-select" [(ngModel)]="adminRoleFilter" (change)="filterUsers()">
+          <option value="all">Todos los roles</option>
+          <option value="estudiante">Estudiantes</option>
+          <option value="docente">Docentes</option>
+          <!-- AGREGA ESTA LÍNEA: -->
+          <option value="admin">Administradores</option>
+        </select>
+
+        <!-- Buscador corregido -->
+        <div class="search-bar-admin">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input type="text" [(ngModel)]="adminSearchText" (input)="filterUsers()" placeholder="Buscar usuario..."
+            class="search-input">
+        </div>
       </div>
     </div>
+
+    <div class="table-card">
+      <div class="table-responsive">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Usuario</th>
+              <th>Correo</th>
+              <th>Rol</th>
+              <th style="text-align: center;">Estado</th>
+              <th style="text-align: center;">¿Es Admin?</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let u of pagedUsers">
+              <td style="font-weight: 600;">{{ u.name }}</td>
+              <td style="color: #666;">{{ u.email }}</td>
+              <td>
+                <select [value]="u.role" (change)="changeUserRole(u, $any($event.target).value)" class="role-select"
+                  [ngClass]="u.role">
+                  <option value="estudiante">Estudiante</option>
+                  <option value="docente">Docente</option>
+                </select>
+              </td>
+              <td style="text-align: center;">
+                <label class="switch" title="Activar/Desactivar">
+                  <input type="checkbox" [checked]="u.isActive" (change)="toggleUserStatus(u)">
+                  <span class="slider round"></span>
+                </label>
+                <span class="status-label" [class.active]="u.isActive">{{ u.isActive ? 'Activo' : 'Inactivo' }}</span>
+              </td>
+              <td style="text-align: center;">
+                <div class="admin-check-wrapper" (click)="toggleAdminPermission(u)" title="Permisos de Administrador">
+                  <div class="admin-check" [class.checked]="u.isAdmin">
+                    <i *ngIf="u.isAdmin" class="fa-solid fa-check"></i>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginación Admin -->
+      <div class="pagination-footer">
+        <span>Página {{ adminCurrentPage }} de {{ adminTotalPages }}</span>
+        <div class="page-buttons">
+          <button (click)="prevAdminPage()" [disabled]="adminCurrentPage === 1"><i
+              class="fa-solid fa-chevron-left"></i></button>
+          <button (click)="nextAdminPage()" [disabled]="adminCurrentPage >= adminTotalPages"><i
+              class="fa-solid fa-chevron-right"></i></button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <!-- Controles de paginación -->
-  <div class="pagination-controls" *ngIf="pagedSentencias.length > 0" style="display: flex; justify-content: center; align-items: center; margin: 20px 0; gap: 10px;">
-    <!-- Controles para modo de búsqueda -->
-    <ng-container *ngIf="isSearchMode">
-      <button (click)="prevSearchPage()" [disabled]="isFirstPage || loadingPage" class="bttn-stnd">Anterior</button>
-      <span style="font-weight: bold;">Página {{ currentPage }} de {{ totalPages }} ({{ searchResults.length }} resultados)</span>
-      <button (click)="nextSearchPage()" [disabled]="!hasMorePages || loadingPage" class="bttn-stnd">Siguiente</button>
-    </ng-container>
-    
-    <!-- Controles para modo normal de paginación -->
-    <ng-container *ngIf="!isSearchMode">
-      <button (click)="prevPage()" [disabled]="isFirstPage || loadingPage" class="bttn-stnd">Anterior</button>
-      <span style="font-weight: bold;">Página {{ currentPage }}</span>
-      <button (click)="nextPage()" [disabled]="isLastPage || loadingPage" class="bttn-stnd">Siguiente</button>
-    </ng-container>
-  </div>
+  <!-- ========================================== -->
+  <!--       VISTA NORMAL (SENTENCIAS)            -->
+  <!-- Vista principal para gestión de sentencias (Admin/Docente/Estudiante) -->
+  <!-- ========================================== -->
+  <div *ngIf="!showAdminPanel">
 
+    <!-- FILTROS ADICIONALES (Periodo y Fechas) -->
+    <!-- FILTROS INTEGRADOS (Estilo más limpio) -->
+    <div class="filters-container"
+      *ngIf="currentUserData?.role === 'docente' || currentUserData?.role === 'administrador' || currentUserData?.isAdmin">
+
+      <!-- 1. BUSCADOR INTEGRADO (Fila única) -->
+      <div class="filter-item search-item">
+        <label>Buscar Sentencia:</label>
+        <div class="search-input-group">
+          <input class="filter-select" type="text" [(ngModel)]="searchText" (input)="onSearchTextChanged()"
+            [placeholder]="(currentUserData?.isAdmin || currentUserData?.role === 'administrador') ? 'Buscar por estudiante, docente, asunto o N° proceso...' : 'Buscar por estudiante, asunto o N° proceso...'" />
+
+          <button *ngIf="isSearchMode" (click)="limpiarBusquedaGeneral()" class="bttn-clear" title="Limpiar búsqueda">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filtro Periodo -->
+      <div class="filter-item">
+        <label>Periodo Académico:</label>
+        <select [(ngModel)]="selectedPeriod" (change)="actualizarFiltros()" class="filter-select">
+          <option value="all">Todos los Periodos</option>
+          <option value="none">Sin Periodo Asignado</option>
+          <option *ngFor="let p of periodosOptions" [value]="p">{{ p }}</option>
+        </select>
+      </div>
+
+      <!-- Filtro Fechas (Opcional visualmente) -->
+      <div class="filter-item">
+        <label>Desde:</label>
+        <input type="date" [(ngModel)]="fechaInicio" (change)="actualizarFiltros()" class="filter-date">
+      </div>
+
+      <div class="filter-item">
+        <label>Hasta:</label>
+        <input type="date" [(ngModel)]="fechaFin" (change)="actualizarFiltros()" class="filter-date">
+      </div>
+    </div>
+
+    <!-- Búsqueda Estudiante -->
+    <div *ngIf="currentUserData?.role === 'estudiante' && !currentUserData?.isAdmin" class="busqueda-proceso">
+      <div class="input-busqueda">
+        <div class="input-container">
+          <input type="text" [(ngModel)]="numeroProcesoBusqueda" placeholder="Buscar por número de proceso"
+            (keypress)="validarBusquedaProceso($event)" (input)="formatearBusquedaProceso($event)"
+            class="input-proceso">
+          <small class="input-info">Únicamente se admite números y guiones "-"</small>
+        </div>
+        <button (click)="buscarPorNumeroProceso()" class="bttn-search">Buscar</button>
+        <button *ngIf="sentenciaEncontrada" (click)="limpiarBusqueda()" class="bttn-clear">Limpiar</button>
+      </div>
+
+      <div *ngIf="mostrarMensajeBusqueda" class="mensaje-busqueda"
+        [ngClass]="{'mensaje-error': !sentenciaEncontrada, 'mensaje-exito': sentenciaEncontrada}">
+        {{ mensajeBusqueda }}
+      </div>
+
+      <div *ngIf="sentenciaEncontrada" class="resultado-busqueda">
+        <div class="sentencia-encontrada">
+          <h3>Sentencia encontrada:</h3>
+          <p>
+            <span
+              [ngClass]="{'estado-proceso': !sentenciaEncontrada.isLocked, 'estado-finalizada': sentenciaEncontrada.isLocked}">
+              {{ getEstadoBloqueo(sentenciaEncontrada) }}
+            </span>
+          </p>
+          <!-- NUEVO: BOTÓN DESBLOQUEAR PARA BÚSQUEDA ESTUDIANTE (Si es admin y la busca) -->
+          <div
+            *ngIf="sentenciaEncontrada.isLocked && (currentUserData?.isAdmin || currentUserData?.role === 'administrador')"
+            style="margin-top: 10px;">
+            <button class="bttn-admin-tool" style="background-color: #d9534f;"
+              (click)="desbloquearSentencia(sentenciaEncontrada)">
+              <i class="fa-solid fa-lock-open"></i> Desbloquear Sentencia
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LISTA DE SENTENCIAS -->
+    <div class="sentencias">
+      <div *ngIf="pagedSentencias.length === 0 && !loadingPage" class="no-sentencias">
+        No hay sentencias disponibles.
+      </div>
+
+      <div *ngFor="let sentencia of pagedSentencias" class="sent">
+        <div class="proceso">
+          <p><strong># {{ sentencia.numero_proceso }}</strong></p>
+        </div>
+
+        <div class="datos">
+          <div class="text-dat">
+            <p><strong>Asunto:</strong> {{ sentencia.asunto }}</p>
+          </div>
+          <div class="text-dat">
+            <p><strong>Estudiante:</strong> {{ sentencia.nombre_estudiante }}</p>
+          </div>
+          <div class="text-dat">
+            <p><strong>Docente:</strong> {{ sentencia.nombre_docente }}</p>
+          </div>
+
+          <!-- NUEVO: FECHA DE CREACIÓN -->
+          <div class="text-dat">
+            <p><strong>Subido el:</strong>
+              <span *ngIf="sentencia.fecha_creacion"> {{ sentencia.fecha_creacion | date:'mediumDate' }}</span>
+              <span *ngIf="!sentencia.fecha_creacion" style="color: grey; font-style: italic;"> Fecha no
+                registrada</span>
+            </p>
+          </div>
+
+          <div class="text-dat">
+            <p *ngIf="sentencia.estado == 'aceptar'"> <strong>Estado:</strong> Aceptada</p>
+            <p *ngIf="sentencia.estado == 'negar'"> <strong>Estado:</strong> Negada</p>
+            <p *ngIf="!sentencia.estado"> <strong>Estado:</strong> Esperando validación</p>
+          </div>
+          <!-- Mostrar estado bloqueado en la tarjeta -->
+          <div class="text-dat" *ngIf="sentencia.isLocked" style="color: red; font-weight: bold; margin-top: 5px;">
+            <i class="fa-solid fa-lock"></i> SENTENCIA BLOQUEADA
+          </div>
+        </div>
+
+        <div class="more">
+          <!-- 
+             AQUÍ ESTÁ LA CORRECCIÓN:
+             1. Nombre: "Abrir Sentencia"
+             2. Condición: Disabled si el estado NO es 'aceptar'.
+          -->
+          <button class="bttn-stnd" (click)="redirectToAnalisis(sentencia)"
+            [disabled]="sentencia?.estado !== 'aceptar'">
+            Abrir Sentencia
+          </button>
+
+          <!-- PDF: DOCENTE Y ADMIN (Visible para ambos) -->
+          <a *ngIf="(currentUserData?.role === 'docente' || currentUserData?.isAdmin) && sentencia.archivoURL"
+            [href]="sentencia.archivoURL" target="_blank" class="bttn-download">
+            Descargar PDF
+          </a>
+        </div>
+
+        <!-- NUEVO: BOTÓN DESBLOQUEAR (Solo Admin/Docente Admin) -->
+        <div *ngIf="sentencia.isLocked && (currentUserData?.isAdmin || currentUserData?.role === 'administrador')"
+          style="display: flex; justify-content: center; margin-top: 10px;">
+          <button class="bttn-admin-tool" style="background-color: #d9534f; width: 90%; justify-content: center;"
+            (click)="desbloquearSentencia(sentencia)">
+            <i class="fa-solid fa-lock-open"></i> DESBLOQUEAR
+          </button>
+        </div>
+
+        <!-- Botones normales (Solo si NO está bloqueada) -->
+        <ng-container *ngIf="!sentencia.isLocked">
+          <div class="bttn-acetp" *ngIf="currentUserData?.role === 'docente' || currentUserData?.isAdmin">
+            <ng-container *ngIf="!sentencia.estado">
+              <ng-container *ngIf="!sentencia.isLockedForAcceptance; else lockedButtons">
+                <!-- BOTONES ACEPTAR/NEGAR -->
+                <button (click)="abrirRazon(sentencia, 'aceptar')" class="bttn-accept">Aceptar</button>
+                <button (click)="abrirRazon(sentencia, 'negar')" class="bttn-reject">Negar</button>
+              </ng-container>
+              <ng-template #lockedButtons>
+                <div class="locked-btns">
+                  <button class="bttn-accept" disabled title="Proceso ya aceptado en otra sentencia">Aceptar</button>
+                </div>
+              </ng-template>
+            </ng-container>
+
+            <button *ngIf="sentencia.estado && (currentUserData?.isAdmin || currentUserData?.role === 'docente')"
+              (click)="abrirEdicionEstado(sentencia)" class="bttn-edit">
+              Editar estado
+            </button>
+          </div>
+
+          <button class="bttn-edit" style="margin-top: 5px;"
+            (click)="editarSentencia(sentencia.numero_proceso, sentencia.email_estudiante, sentencia.email_docente)">Editar
+            Sentencia</button>
+
+          <div *ngIf="currentUserData?.role !== 'docente' && sentencia.estado" class="bttn-status">
+            <button (click)="openOverlay(sentencia)" class="bttn-download">Ver estado</button>
+          </div>
+
+          <button *ngIf="currentUserData?.role === 'docente' || currentUserData?.isAdmin"
+            (click)="confirmarEliminacion(sentencia)" style="background: none; border: none;"
+            title="Eliminar sentencia">
+            <p style="color: brown;"><i class="fa-solid fa-trash"></i> Eliminar Sentencia</p>
+          </button>
+        </ng-container>
+      </div>
+
+      <!-- Overlays -->
+      <div class="overlay" *ngIf="showRazonOverlay">
+        <div class="overlay-content">
+          <h3>Razón para {{ accionPendiente }}</h3>
+          <textarea [(ngModel)]="razonTexto"></textarea>
+          <div class="overlay-buttons">
+            <button (click)="guardarDecision()">Guardar</button>
+            <button (click)="cancelarDecision()">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay" *ngIf="showEditarEstadoOverlay">
+        <div class="overlay-content">
+          <h3>Editar estado</h3>
+          <div class="estado-options">
+            <button [class.selected]="nuevoEstado === 'aceptar'" (click)="nuevoEstado = 'aceptar'" class="bttn-accept">
+              Aceptar
+            </button>
+            <button [class.selected]="nuevoEstado === 'negar'" (click)="nuevoEstado = 'negar'" class="bttn-reject">
+              Negar
+            </button>
+          </div>
+          <textarea [(ngModel)]="razonTexto" placeholder="Ingrese la nueva razón..." class="razon-textarea">
+          </textarea>
+          <div class="overlay-buttons">
+            <button (click)="guardarEdicionEstado()">Guardar</button>
+            <button (click)="cancelarEdicionEstado()">Cancelar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay" *ngIf="sentenciaAEliminar">
+        <div class="overlay-content">
+          <h3>¿Está seguro de eliminar esta sentencia?</h3>
+          <div class="overlay-buttons">
+            <button class="bttn-accept" (click)="eliminarSentenciaConfirmada()">Sí, eliminar</button>
+            <button class="bttn-reject" (click)="cancelarEliminacion()">No</button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="showOverlay" class="overlay">
+        <div class="overlay-content">
+          <div class="overlay-content-text">
+            <p *ngIf="selectedSentencia?.estado == 'aceptar'" class="bttn-accept">Sentencia aceptada</p>
+            <p *ngIf="selectedSentencia?.estado == 'negar'" class="bttn-reject">Sentencia negada</p>
+            <div class="reason-container">
+              <p class="razon-est" *ngIf="selectedSentencia?.razon">
+                <strong>Razón:</strong> {{ selectedSentencia?.razon }}
+              </p>
+              <p *ngIf="!selectedSentencia?.razon">
+                No se proporcionó una razón para esta decisión.
+              </p>
+            </div>
+          </div>
+          <div class="bttn-close">
+            <button (click)="closeOverlay()" class="bttn-stnd">Cerrar</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Paginación Sentencias -->
+    <div class="pagination-controls" *ngIf="pagedSentencias.length > 0">
+      <button (click)="prevPage()" [disabled]="isFirstPage" class="bttn-stnd">Anterior</button>
+      <span>Página {{ currentPage }}</span>
+      <button (click)="nextPage()" [disabled]="isLastPage" class="bttn-stnd">Siguiente</button>
+    </div>
+
+  </div>
 </div>

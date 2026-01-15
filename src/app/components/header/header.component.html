@@ -1,19 +1,22 @@
 <nav class="navbar">
+  <!-- Lado izquierdo: Navegación y Enlaces externos -->
   <div class="nav-left">
     <button class="bttn-nav" routerLink="/principal">Inicio</button>
-    <button class="bttn-nav"  onclick="window.open('https://procesosjudiciales.funcionjudicial.gob.ec/busqueda', '_blank')">E-SATJE</button>
+    <button class="bttn-nav"
+      onclick="window.open('https://procesosjudiciales.funcionjudicial.gob.ec/busqueda', '_blank')">E-SATJE</button>
     <button class="bttn-nav" onclick="window.open('https://www.utpl.edu.ec/', '_blank')">UTPL</button>
   </div>
+  <!-- Lado derecho: Información de usuario y Logout -->
   <div class="nav-right" *ngIf="user">
     <div class="user-info" (click)="toggleLogoutMenu()">
-      <div>
-        <span>{{ user.name }}</span>
-        <br>
-        <span>{{ user.role }}</span> 
+      <div style="text-align: right; display: flex; flex-direction: column;">
+        <span style="font-weight: bold; font-size: 16px;">{{ user.name }}</span>
+        <span style="font-size: 14px;">{{ user.role | titlecase }}</span>
+        <span class="periodo-text">{{ periodoActual }}</span>
       </div>
     </div>
     <div class="exit">
-      <button (click)="logout()">
+      <button (click)="logout()" title="Cerrar Sesión">
         <i class="fa-solid fa-arrow-right-from-bracket" style="font-size: 30px; color: white;"></i>
       </button>
     </div>

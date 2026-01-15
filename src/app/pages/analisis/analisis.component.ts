@@ -6,12 +6,7 @@ import { switchMap, map } from 'rxjs/operators';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
 import { Observable, of } from 'rxjs';
 import { log } from '@angular-devkit/build-angular/src/builders/ssr-dev-server';
-
-interface User {
-  uid: string;
-  role: string;
-  [key: string]: any; // To handle any additional properties
-}
+import { AuthService, UserData } from '../../services/auth.service';
 
 @Component({
   selector: 'app-analisis',
@@ -28,7 +23,11 @@ export class AnalisisComponent implements OnInit {
   // docenteSaved = false;
   dataLoaded = false;
   isDocente = false;
-  currentUser: Observable<User | null | undefined> = of(null); // Allow null and undefined
+
+  // Usamos UserData importado y añadimos currentUserData
+  currentUser: Observable<UserData | null | undefined> = of(null);
+  currentUserData: UserData | null = null;
+
   selectedButtons: { [key: string]: string } = {};
   cargando: boolean = false; // Nueva propiedad para controlar el estado de carga
   mensajeExito: string = '';
@@ -54,27 +53,11 @@ export class AnalisisComponent implements OnInit {
     this.analisisForm = this.fb.group({
       numero_proceso: ['', Validators.required],
       normativas: this.fb.array(
-        [
-          this.fb.group({
-            pregunta: ['', Validators.required],
-            respuesta: ['', Validators.required],
-            calificacion: ['No Calificado'],
-            retroalimentacion: [''],
-            showCalificar: [false],
-          }),
-        ],
+        [], // Inicializamos vacío, se llena en loadData o con botón agregar
         Validators.required
       ), // Validators.required hace que el array no pueda estar vacío
       facticas: this.fb.array(
-        [
-          this.fb.group({
-            pregunta: ['', Validators.required],
-            respuesta: ['', Validators.required],
-            calificacion: ['No Calificado'],
-            retroalimentacion: [''],
-            showCalificar: [false],
-          }),
-        ],
+        [], // Inicializamos vacío
         Validators.required
       ),
       saved: [false],
@@ -146,6 +129,10 @@ export class AnalisisComponent implements OnInit {
     this.mostrarRetroalimentacion = new Array(normativasArray.length).fill(false);
   }
 
+  /**
+   * Verifica si la sentencia está bloqueada (finalizada) en Firestore.
+   * Si está bloqueada, deshabilita todo el formulario para evitar ediciones.
+   */
   checkLockStatus() {
     this.firestore.collection('locks').doc(this.numero_proceso).valueChanges().subscribe((data: any) => {
       if (data && data.locked) {
@@ -174,12 +161,22 @@ export class AnalisisComponent implements OnInit {
     });
   }
 
+  // LÓGICA USERDATA ACTUALIZADA
+  /**
+   * Carga los datos del usuario actual y verifica sus permisos.
+   * - Centraliza la gestión de `currentUserData`.
+   * - Determina si el usuario es Docente o Admin para habilitar funciones de calificación.
+   */
   loadUserData() {
     this.afAuth.user.subscribe(user => {
       if (user) {
-        this.currentUser = this.firestore.collection('users').doc<User>(user.uid).valueChanges();
+        this.currentUser = this.firestore.collection('users').doc<UserData>(user.uid).valueChanges();
         this.currentUser.subscribe(userData => {
-          if (userData && userData.role === 'docente') {
+          // Asignamos el currentUserData centralizado
+          this.currentUserData = userData || null;
+
+          // Verificamos rol de docente o si es admin
+          if (userData && (userData.role === 'docente' || userData.isAdmin)) {
             this.isDocente = true;
             //this.checkDocenteSaved();
           }
@@ -205,6 +202,9 @@ export class AnalisisComponent implements OnInit {
   }
 
   addNormativa() {
+    // VALIDACIÓN DE SEGURIDAD: No permitir agregar si está bloqueado
+    if (this.analisisForm.disabled) return;
+
     this.normativas.push(this.fb.group({
       pregunta: ['', Validators.required],
       respuesta: ['', Validators.required],
@@ -217,13 +217,19 @@ export class AnalisisComponent implements OnInit {
   }
 
   removeNormativa(index: number) {
+    // VALIDACIÓN DE SEGURIDAD: No permitir eliminar si está bloqueado
+    if (this.analisisForm.disabled) return;
+
     this.normativas.removeAt(index);
     this.mostrarRetroalimentacion.splice(index, 1);
     this.onFormChange();
   }
-  
+
 
   addFactica() {
+    // VALIDACIÓN DE SEGURIDAD: No permitir agregar si está bloqueado
+    if (this.analisisForm.disabled) return;
+
     this.facticas.push(this.fb.group({
       pregunta: ['', Validators.required],
       respuesta: ['', Validators.required],
@@ -236,6 +242,9 @@ export class AnalisisComponent implements OnInit {
   }
 
   removeFactica(index: number) {
+    // VALIDACIÓN DE SEGURIDAD: No permitir eliminar si está bloqueado
+    if (this.analisisForm.disabled) return;
+
     this.facticas.removeAt(index);
     this.mostrarRetroalimentacion.splice(index, 1);
     this.onFormChange();
@@ -329,15 +338,15 @@ export class AnalisisComponent implements OnInit {
             });
           }
           // Inicializar arrays de control de retroalimentación
-        this.inicializarMostrarRetroalimentacion();       
-        // Marcar como cargado y actualizar estado
+          this.inicializarMostrarRetroalimentacion();
+          // Marcar como cargado y actualizar estado
           this.dataLoaded = true;
           this.saved = analisis.saved || false;
 
           // Verificar el estado de bloqueo después de cargar
           this.checkLockStatus();
         } else {
-          // Si no hay datos, inicializar con valores por defecto
+          // Si no hay datos, inicializar con valores por defecto (solo la primera vez)
           if (this.normativas.length === 0) {
             this.addNormativa();
           }
@@ -358,7 +367,7 @@ export class AnalisisComponent implements OnInit {
             retroalimentacion: '',
             showCalificar: false
           },
-        );
+          );
           this.dataLoaded = true;
           this.mostrarRetroalimentacionPregunta = false;
           this.mostrarRetroalimentacionDecision = false;
@@ -376,15 +385,15 @@ export class AnalisisComponent implements OnInit {
     }
   }
 
-    submitForm() {
-    const normativasArray = this.analisisForm.get('normativas') as FormArray;
-    const facticasArray = this.analisisForm.get('facticas') as FormArray;
-
-    // Quitar validaciones estrictas temporalmente
+  // MODIFICADO: Acepta argumento opcional 'redirecting' para evitar recarga
+  /**
+   * Guarda los datos del formulario en Firestore.
+   * @param redirecting Si es true, omite la recarga de página para permitir la navegación suave.
+   */
+  submitForm(redirecting: boolean = false) {
     this.isSubmitting = true;
     this.cargando = true;
 
-    // Obtener los valores de normativas y facticas
     const normativasValue = this.analisisForm.get('normativas')?.value;
     const facticasValue = this.analisisForm.get('facticas')?.value;
 
@@ -402,7 +411,7 @@ export class AnalisisComponent implements OnInit {
       saved: true,
       timestamp: new Date() // Agregamos un timestamp para asegurar que se detecte el cambio
     };
-  
+
     // Guardar los datos en Firestore
     this.firestore.collection('analisis').doc(this.numero_proceso).set(analisisData)
       .then(() => {
@@ -410,12 +419,17 @@ export class AnalisisComponent implements OnInit {
         this.analisisForm.patchValue({ saved: true }, { emitEvent: false });
         this.cargando = false;
         this.mostrarMensajeExito('Guardado con éxito');
-        
-        // Forzamos la recarga de la página después de guardar
-        setTimeout(() => {
+
+        // CAMBIO CLAVE: Solo recarga si NO vamos a redirigir
+        if (!redirecting) {
+          setTimeout(() => {
+            this.isSubmitting = false;
+            window.location.reload();
+          }, 1000);
+        } else {
+          // Si estamos redirigiendo, no recargamos, solo quitamos el estado de submit
           this.isSubmitting = false;
-          window.location.reload();
-        }, 1000);
+        }
       })
       .catch(error => {
         // console.error("Error al guardar el documento: ", error);
@@ -424,10 +438,7 @@ export class AnalisisComponent implements OnInit {
         this.isSubmitting = false;
       });
   }
-  
-  
 
-  // Método para mostrar mensaje de éxito
   mostrarMensajeExito(mensaje: string) {
     // Aquí puedes implementar la lógica para mostrar el mensaje
     // Por ejemplo, podrías usar un servicio de notificaciones o actualizar una variable en el componente
@@ -477,14 +488,21 @@ export class AnalisisComponent implements OnInit {
     }
   }
 
+  // Método para volver atrás
+  volver() {
+    this.router.navigate(['/principal']);
+  }
+
+  // MODIFICADO: Llama a submitForm con true para evitar recarga
   guardarYContinuar(event: Event) {
     event.preventDefault();
 
     // Quitar validaciones estrictas temporalmente
-    // Primero guardar
-    this.submitForm();
-    
-    // Luego navegar después de un breve delay para asegurar que se guarde
+
+    // Llamamos a submitForm pasando TRUE para que NO haga window.location.reload()
+    this.submitForm(true);
+
+    // Esperamos un poco para asegurar que Firebase reciba los datos y luego navegamos
     setTimeout(() => {
       this.router.navigate(['/analisis2'], {
         queryParams: {
@@ -503,7 +521,7 @@ export class AnalisisComponent implements OnInit {
     if (control) {
       const newShowCalificar = !control.value.showCalificar;
       control.patchValue({ showCalificar: newShowCalificar }, { emitEvent: false });
-      
+
       if (!newShowCalificar) {
         const key = `${type}_${index}`;
         delete this.selectedButtons[key];
@@ -520,8 +538,8 @@ export class AnalisisComponent implements OnInit {
     control.patchValue({ calificacion });
     this.selectedButtons[`${type}_${index}`] = calificacion;
   }
-  
-  
+
+
   isCalificacionCorrecta(type: string, index: number): boolean {
     const formArray = type === 'normativa' ? this.normativas : this.facticas;
     const control = formArray.at(index);
@@ -584,9 +602,9 @@ export class AnalisisComponent implements OnInit {
 
     if (section === 'problem_decision') {
       const retroalimentacion = (event && event.target) ? event.target.value : event;
-      
+
       // console.log('Setting retroalimentacion to:', retroalimentacion);
-      
+
       const decisionQuestionGroup = this.analisisForm.get('problem_decision');
       if (decisionQuestionGroup) {
         decisionQuestionGroup.patchValue({

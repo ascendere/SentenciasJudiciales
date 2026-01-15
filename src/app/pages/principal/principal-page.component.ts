@@ -1,17 +1,17 @@
 import { Component, OnInit } from '@angular/core';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { Observable, combineLatest, of, BehaviorSubject } from 'rxjs';
-import { switchMap, map, startWith, take } from 'rxjs/operators';
+import { switchMap, map, startWith, take, finalize } from 'rxjs/operators';
 import { firstValueFrom } from 'rxjs';
-import * as Papa from 'papaparse'; // Asegúrate de instalar papaparse con `npm install papaparse`
-import { saveAs } from 'file-saver'; // Asegúrate de instalar file-saver con `npm install file-saver`
-import * as XLSX from 'xlsx'; // Para generar archivos Excel
+
+// IMPORTANTE: Importamos la interfaz centralizada para manejar los roles
+import { AuthService, UserData } from '../../services/auth.service';
 
 interface Sentencia {
   id: any;
-  docente?: any; // Puede que necesites definir un tipo más específico para 'docente'
+  docente?: any; // Informacion del objeto docente (opcional)
   numero_proceso: string;
   asunto: string;
   nombre_estudiante: string;
@@ -23,6 +23,9 @@ interface Sentencia {
   razon?: string;
   isLocked?: boolean; // Esta propiedad parece venir de tu HTML original, la mantengo
   isLockedForAcceptance?: boolean; // Indica si los botones de aceptar/negar deben estar deshabilitadoszzz
+  periodo_academico?: string;
+  fecha_creacion?: any;
+  fecha_actualizacion?: any;
 }
 
 @Component({
@@ -33,6 +36,34 @@ interface Sentencia {
 export class PrincipalPageComponent implements OnInit {
   user: any = null;
   userRole: string | null = null;
+
+  // DATOS DE USUARIO ACTUALIZADOS (Para verificar si es Admin)
+  currentUserData: UserData | null = null;
+
+  // VARIABLES NUEVAS PARA EL DASHBOARD ADMIN
+  allUsers: UserData[] = [];
+  filteredUsers: UserData[] = [];
+  pagedUsers: UserData[] = []; // Usuarios de la página actual
+  adminSearchText: string = '';
+  // Variable para el filtro de rol
+  adminRoleFilter: string = 'all';
+  showAdminPanel: boolean = false;
+
+  // DROPDOWN DE VISTA (ADMIN/DOCENTE)
+  vistaAdminSeleccionada: 'global' | 'mias' = 'global';
+  soloMisSentencias: boolean = false;
+
+  // Paginación Admin
+  adminPageSize = 10;
+  adminCurrentPage = 1;
+  adminTotalPages = 1;
+
+  // FILTROS (Periodo y Fecha)
+  periodosOptions: string[] = []; // Lista de nombres de periodos cargados
+  selectedPeriod: string = 'all'; // 'all', 'none', o nombre del periodo
+  fechaInicio: string | null = null;
+  fechaFin: string | null = null;
+
   // Cambiamos sentencias$ para que sea un BehaviorSubject que se actualizará con los datos crudos
   private _allSentencias = new BehaviorSubject<Sentencia[]>([]);
   public filteredSentencias$: Observable<Sentencia[]>; // Este es el observable que usará el HTML
@@ -49,10 +80,12 @@ export class PrincipalPageComponent implements OnInit {
   showEditarEstadoOverlay = false;
   nuevoEstado: 'aceptar' | 'negar' | null = null;
   sentenciaEditar: Sentencia | null = null;
-  archivoSeleccionado: File | null = null;
-  docentesCargados: { nombre: string; email: string }[] = [];
   alert: string = '';
   alertype: 'success' | 'error' = 'success';
+
+  // Alerta de docente inactivo
+  showInactiveAlert: boolean = false;
+
   sentenciaAEliminar: any = null;
   userName: string = "";
   userEmail: string = "";
@@ -64,8 +97,10 @@ export class PrincipalPageComponent implements OnInit {
   isLastPage = false;
   isFirstPage = true;
   pagedSentencias: Sentencia[] = [];
+
+  // Indicador de carga global
+  isLoading: boolean = false;
   loadingPage = false;
-  
   // Variables para manejar búsqueda
   isSearchMode = false;
   searchResults: Sentencia[] = [];
@@ -75,7 +110,8 @@ export class PrincipalPageComponent implements OnInit {
   constructor(
     private afAuth: AngularFireAuth,
     private firestore: AngularFirestore,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {
     // Configurar filteredSentencias$ para que solo procese isLockedForAcceptance
     this.filteredSentencias$ = combineLatest([
@@ -84,7 +120,7 @@ export class PrincipalPageComponent implements OnInit {
     ]).pipe(
       map(([sentencias, searchText]) => {
         console.log('🔍 Constructor - Total sentencias:', sentencias.length);
-        
+
         // Solo procesar isLockedForAcceptance, la búsqueda se maneja en onSearchTextChanged
         const acceptedProcessNumbers = new Set<string>();
         sentencias.forEach(s => {
@@ -101,20 +137,204 @@ export class PrincipalPageComponent implements OnInit {
           };
         });
 
+        // Ordenamiento por Fecha de Creación
+        processedSentencias.sort((a, b) => {
+          const dateA = a.fecha_creacion ? (a.fecha_creacion.toDate ? a.fecha_creacion.toDate() : new Date(a.fecha_creacion)) : new Date(0);
+          const dateB = b.fecha_creacion ? (b.fecha_creacion.toDate ? b.fecha_creacion.toDate() : new Date(b.fecha_creacion)) : new Date(0);
+          return dateB.getTime() - dateA.getTime();
+        });
+
         return processedSentencias;
       })
     );
   }
 
   ngOnInit() {
+    this.isLoading = true;
+
+    this.route.queryParams.subscribe(params => {
+      if (params['error'] === 'access_denied') {
+        this.showNotification('⛔ Acceso denegado. No tiene permisos para visualizar este expediente.', 'error');
+        this.router.navigate([], {
+          queryParams: { 'error': null },
+          queryParamsHandling: 'merge'
+        });
+      }
+    });
+
+    this.cargarPeriodosDisponibles(); // Cargar lista de periodos para el filtro
+
     this.afAuth.authState.subscribe(user => {
       if (user) {
+        if (!sessionStorage.getItem('userId')) {
+          console.log('🔄 Restaurando userId en sessionStorage...');
+          sessionStorage.setItem('userId', user.uid);
+          sessionStorage.setItem('sessionToken', 'active');
+        }
+
         this.user = user;
         this.loadUserData(user.uid);
       } else {
-        this.router.navigate(['/login']);
+        this.isLoading = false;
+        // Opcional: this.router.navigate(['/login']);
       }
     });
+  }
+
+  // Cargar periodos para el dropdown
+  cargarPeriodosDisponibles() {
+    this.firestore.collection('periodoAcademico').valueChanges().subscribe((periodos: any[]) => {
+      const periodosValidos = periodos.filter(p => p.anio_inicio > 2000);
+      this.periodosOptions = periodosValidos.map(p => p.nombre).sort();
+    });
+  }
+
+  actualizarFiltros() {
+    this.searchSubject.next(this.searchText);
+    this.currentPage = 1;
+    this.onSearchTextChanged();
+  }
+
+  async desbloquearSentencia(sentencia: Sentencia) {
+    if (!confirm('¿Está seguro de desbloquear esta sentencia? Esto permitirá modificaciones nuevamente.')) {
+      return;
+    }
+
+    try {
+      this.isLoading = true;
+      await this.firestore.collection('locks').doc(sentencia.numero_proceso).delete();
+      if (sentencia.id) {
+        await this.firestore.collection('sentencias').doc(sentencia.id).update({ isLocked: false });
+      } else {
+        const query = await this.firestore.collection('sentencias', ref => ref.where('numero_proceso', '==', sentencia.numero_proceso)).get().toPromise();
+        if (query && !query.empty) {
+          await query.docs[0].ref.update({ isLocked: false });
+        }
+      }
+
+      this.showNotification('Sentencia desbloqueada correctamente.', 'success');
+
+      // RECARGAR LOS DATOS PARA QUE LA UI SE ACTUALICE
+      if (this.isSearchMode) {
+        this.onSearchTextChanged();
+      } else if (this.sentenciaEncontrada && this.sentenciaEncontrada.numero_proceso === sentencia.numero_proceso) {
+        // Si es una búsqueda específica de estudiante
+        this.buscarPorNumeroProceso();
+      } else {
+        // Si es la lista normal paginada
+        this.loadPagedSentencias('init');
+      }
+
+    } catch (error) {
+      console.error('Error al desbloquear:', error);
+      this.showNotification('Error al desbloquear la sentencia.', 'error');
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  // FUNCIONES DEL DASHBOARD DE ADMIN
+
+  toggleAdminView() {
+    this.showAdminPanel = !this.showAdminPanel;
+  }
+
+  // Cambio de vista desde el Dropdown
+  cambiarVistaAdmin() {
+    this.soloMisSentencias = (this.vistaAdminSeleccionada === 'mias');
+    // Usamos limpiarBusquedaGeneral para asegurar que se borren los filtros de texto/fecha/periodo
+    this.limpiarBusquedaGeneral();
+
+    const modo = this.soloMisSentencias ? 'Solo mis asignaciones' : 'Vista Global (Todas las sentencias)';
+    this.showNotification(`Cambiado a: ${modo}`, 'success');
+  }
+
+  loadAllUsers() {
+    this.firestore.collection('users').valueChanges({ idField: 'uid' }).subscribe((users: any[]) => {
+      this.allUsers = users.map(u => ({
+        ...u,
+        isAdmin: u.isAdmin === true,
+        isActive: u.isActive !== false
+      }));
+      this.filterUsers();
+    });
+  }
+
+  filterUsers() {
+    let filtered = [...this.allUsers];
+
+    // Filtrado por Rol
+    if (this.adminRoleFilter !== 'all') {
+      if (this.adminRoleFilter === 'admin') {
+        filtered = filtered.filter(u => u.isAdmin);
+      } else {
+        filtered = filtered.filter(u => u.role === this.adminRoleFilter);
+      }
+    }
+
+    // Filtrado por Texto (Buscador)
+    if (this.adminSearchText) {
+      const search = this.adminSearchText.toLowerCase();
+      filtered = filtered.filter(u =>
+        u.name.toLowerCase().includes(search) ||
+        u.email.toLowerCase().includes(search) ||
+        u.role.toLowerCase().includes(search)
+      );
+    }
+
+    this.filteredUsers = filtered;
+
+    // Reiniciar paginación al filtrar
+    this.adminCurrentPage = 1;
+    this.updateAdminPagination();
+  }
+
+  updateAdminPagination() {
+    this.adminTotalPages = Math.ceil(this.filteredUsers.length / this.adminPageSize);
+    const startIndex = (this.adminCurrentPage - 1) * this.adminPageSize;
+    const endIndex = startIndex + this.adminPageSize;
+    this.pagedUsers = this.filteredUsers.slice(startIndex, endIndex);
+  }
+
+  nextAdminPage() {
+    if (this.adminCurrentPage < this.adminTotalPages) {
+      this.adminCurrentPage++;
+      this.updateAdminPagination();
+    }
+  }
+
+  prevAdminPage() {
+    if (this.adminCurrentPage > 1) {
+      this.adminCurrentPage--;
+      this.updateAdminPagination();
+    }
+  }
+
+  toggleUserStatus(user: UserData) {
+    if (!user.uid) return;
+    const newState = !user.isActive;
+    this.firestore.collection('users').doc(user.uid).update({ isActive: newState })
+      .then(() => this.showNotification(`Usuario ${newState ? 'activado' : 'desactivado'}`, 'success'))
+      .catch(err => this.showNotification('Error al actualizar estado', 'error'));
+  }
+
+  changeUserRole(user: UserData, newRole: string) {
+    if (!user.uid) return;
+    this.firestore.collection('users').doc(user.uid).update({ role: newRole })
+      .then(() => this.showNotification(`Rol actualizado a ${newRole}`, 'success'))
+      .catch(err => this.showNotification('Error al actualizar rol', 'error'));
+  }
+
+  toggleAdminPermission(user: UserData) {
+    if (!user.uid) return;
+    if (user.email === this.userEmail) {
+      alert("No puedes quitarte tus propios permisos de administrador.");
+      return;
+    }
+    const newState = !user.isAdmin;
+    this.firestore.collection('users').doc(user.uid).update({ isAdmin: newState })
+      .then(() => this.showNotification(`Permisos de administrador ${newState ? 'otorgados' : 'revocados'}`, 'success'))
+      .catch(err => this.showNotification('Error al actualizar permisos', 'error'));
   }
 
   abrirRazon(sentencia: Sentencia, accion: 'aceptar' | 'negar') {
@@ -156,24 +376,33 @@ export class PrincipalPageComponent implements OnInit {
     }
   }
 
-  // Método corregido para actualizar la sentencia correcta
+  /**
+   * Guarda la decisión del docente (Aceptar o Negar sentencia).
+   * - Si acepta: Verifica que no exista ya otra sentencia aceptada para el mismo proceso.
+   * - Si niega: Requiere razón.
+   * - Actualiza Firestore y rechaza automáticamente duplicados si se acepta.
+   */
   async guardarDecision() {
-    if (!this.sentenciaPendiente || !this.razonTexto.trim()) {
+    if (!this.sentenciaPendiente || (!this.sentenciaPendiente.id && !this.sentenciaPendiente.numero_proceso)) {
       console.error('Falta información necesaria para actualizar la sentencia.');
       return;
     }
 
+    // Validar razón solo si se niega (o siempre, según tu preferencia). Aquí obligamos siempre.
+    if (!this.razonTexto.trim()) {
+      this.showNotification('Debe ingresar una razón.', 'error');
+      return;
+    }
+
     try {
-      console.log('🔍 Iniciando actualización de sentencia...');
-      console.log('Número de proceso:', this.sentenciaPendiente.numero_proceso);
-      console.log('Email estudiante:', this.sentenciaPendiente.email_estudiante);
-      console.log('Usuario actual:', this.userEmail);
+      this.isLoading = true; // Activar spinner
 
       // Verificar conexión
       await this.firestore.firestore.enableNetwork();
 
       // PASO 1: Verificar si este numero_proceso ya ha sido aceptado por CUALQUIER sentencia.
       // Esto previene que se acepten múltiples sentencias para el mismo proceso.
+
       if (this.accionPendiente === 'aceptar') {
         console.log('🔎 Verificando si el número de proceso ya está aceptado globalmente...');
         const existingAcceptedQuery = await this.firestore
@@ -184,93 +413,96 @@ export class PrincipalPageComponent implements OnInit {
           .get();
 
         if (!existingAcceptedQuery.empty) {
-          console.warn('⚠️ Este número de proceso ya ha sido aceptado por otra sentencia. No se puede aceptar de nuevo.');
-          this.resetFormState(); // Limpiar el estado del formulario
-          // Opcional: mostrar una notificación al usuario aquí
+          this.resetFormState();
           this.showNotification('Este número de proceso ya ha sido aceptado por otra sentencia.', 'error');
-          return; // Detener el proceso
+          this.isLoading = false;
+          return;
         }
-        // console.log('✅ Número de proceso no encontrado como aceptado previamente.');
       }
 
-      // PASO 2: Obtener la sentencia específica que este docente está manejando
-      const querySnapshot = await this.firestore
-        .collection('sentencias')
-        .ref.where('numero_proceso', '==', this.sentenciaPendiente.numero_proceso)
-        .where('email_estudiante', '==', this.sentenciaPendiente.email_estudiante)
-        .where('email_docente', '==', this.userEmail) // Asegurar que es la sentencia asignada a este docente
-        .limit(1)
-        .get();
+      // Si tenemos ID, usamos el ID directamente.
+      if (this.sentenciaPendiente.id) {
+        const docRef = this.firestore.collection('sentencias').doc(this.sentenciaPendiente.id).ref;
 
-      if (querySnapshot.empty) {
-        console.error('❌ No se encontró la sentencia específica para este estudiante y docente.');
-        console.log('Criterios de búsqueda:', {
-          numero_proceso: this.sentenciaPendiente.numero_proceso,
-          email_estudiante: this.sentenciaPendiente.email_estudiante,
-          email_docente: this.userEmail,
+        await this.firestore.firestore.runTransaction(async (transaction) => {
+          const doc = await transaction.get(docRef);
+          if (!doc.exists) throw new Error("Documento no encontrado");
+
+          const updateData = {
+            estado: this.accionPendiente,
+            razon: this.razonTexto.trim(),
+            fecha_actualizacion: new Date(),
+            actualizado_por: this.userEmail,
+          };
+
+          transaction.update(docRef, updateData);
+
+          // Rechazar duplicados si se acepta
+          if (this.accionPendiente === 'aceptar') {
+            const numeroProcesoAceptado = this.sentenciaPendiente!.numero_proceso;
+            const otherSentenciasQuery = await this.firestore
+              .collection('sentencias')
+              .ref.where('numero_proceso', '==', numeroProcesoAceptado)
+              .get();
+
+            otherSentenciasQuery.docs.forEach((otherDoc) => {
+              const otherDocData = otherDoc.data() as Sentencia;
+              if (otherDoc.id !== this.sentenciaPendiente!.id && otherDocData.estado !== 'aceptar') {
+                transaction.update(otherDoc.ref, {
+                  estado: 'negar',
+                  razon: `Rechazada automáticamente: Proceso '${numeroProcesoAceptado}' aceptado por ${this.userEmail}.`,
+                  fecha_actualizacion: new Date(),
+                  actualizado_por: 'Sistema (auto-rechazo)',
+                });
+              }
+            });
+          }
         });
-        this.resetFormState();
-        return;
-      }
 
-      const docSnapshot = querySnapshot.docs[0];
-      console.log('📄 Documento encontrado con ID:', docSnapshot.id);
-      console.log('📊 Datos actuales del documento:', docSnapshot.data());
+      } else {
+        let query = this.firestore.collection('sentencias').ref
+          .where('numero_proceso', '==', this.sentenciaPendiente.numero_proceso)
+          .where('email_estudiante', '==', this.sentenciaPendiente.email_estudiante);
 
-      // PASO 3: Usar una transacción para garantizar la consistencia
-      await this.firestore.firestore.runTransaction(async (transaction) => {
-        const docRef = docSnapshot.ref;
-        const doc = await transaction.get(docRef);
-
-        if (!doc.exists) {
-          throw new Error('Documento no existe en la transacción.');
+        // Solo filtramos por docente si NO es admin
+        if (!this.currentUserData?.isAdmin && this.userRole === 'docente') {
+          query = query.where('email_docente', '==', this.userEmail);
         }
 
-        // Datos para actualizar la sentencia actual
-        const updateData = {
+        const querySnapshot = await query.limit(1).get();
+
+        if (querySnapshot.empty) {
+          console.error('❌ No se encontró la sentencia específica.');
+          this.resetFormState();
+          this.isLoading = false;
+          return;
+        }
+
+        const docSnapshot = querySnapshot.docs[0];
+
+        await docSnapshot.ref.update({
           estado: this.accionPendiente,
           razon: this.razonTexto.trim(),
           fecha_actualizacion: new Date(),
           actualizado_por: this.userEmail,
-        };
+        });
+      }
 
-        console.log('🔄 Datos que se van a actualizar (sentencia actual):', updateData);
-        transaction.update(docRef, updateData); // Actualizar la sentencia actual
+      // Recargar SOLO las sentencias para refrescar la UI sin perder el contexto de búsqueda/filtros
+      this.loadSentencias().subscribe(sentencias => {
+        this._allSentencias.next(sentencias);
 
-        // PASO 4: Si la acción es 'aceptar', rechazar automáticamente todas las demás sentencias con el mismo numero_proceso
-        if (this.accionPendiente === 'aceptar') {
-          console.log('🌐 Acción: Aceptar. Rechazando otras sentencias con el mismo número de proceso...');
-          const numeroProcesoAceptado = this.sentenciaPendiente!.numero_proceso;
-
-          // Obtener todas las demás sentencias con el mismo numero_proceso
-          const otherSentenciasQuery = await this.firestore
-            .collection('sentencias')
-            .ref.where('numero_proceso', '==', numeroProcesoAceptado)
-            .get();
-
-          otherSentenciasQuery.docs.forEach((otherDoc) => {
-            // Solo actualizar si no es la sentencia que acabamos de aceptar y su estado no es ya 'aceptar'
-            const otherDocData = otherDoc.data() as Sentencia;
-            if (otherDoc.id !== docSnapshot.id && otherDocData.estado !== 'aceptar') {
-              console.log(`  - Rechazando documento con ID: ${otherDoc.id}`);
-              transaction.update(otherDoc.ref, {
-                estado: 'negar', // Cambiado a 'negar' para rechazo automático
-                razon: `Rechazada automáticamente: Sentencia con el número de proceso '${numeroProcesoAceptado}' ya fue aceptada por ${this.userEmail}.`,
-                fecha_actualizacion: new Date(),
-                actualizado_por: 'Sistema (auto-rechazo)',
-              });
-            }
-          });
-          console.log('✅ Proceso de auto-rechazo de sentencias completado.');
+        if (this.isSearchMode) {
+          console.log('🔄 Refrescando búsqueda actual...');
+          this.onSearchTextChanged(); // Re-aplicar filtros actuales
+        } else {
+          console.log('🔄 Refrescando lista paginada...');
+          this.loadPagedSentencias('init');
         }
-        console.log('✅ Transacción de actualización ejecutada.');
       });
 
-      // Recargar datos para reflejar cambios en la UI
-      this.loadUserData(this.user.uid); // Recarga completa para actualizar el estado isLockedForAcceptance
-
       this.resetFormState(); // Limpiar el estado del formulario
-      console.log('✅ Proceso de actualización completado');
+      console.log('Proceso de actualización completado');
       this.showNotification('Decisión guardada exitosamente.', 'success');
 
     } catch (error) {
@@ -278,6 +510,8 @@ export class PrincipalPageComponent implements OnInit {
       console.error('Código de error:', (error as any).code);
       console.error('Mensaje:', (error as any).message);
       this.showNotification('Error al guardar la decisión.', 'error');
+    } finally {
+      this.isLoading = false;
     }
   }
 
@@ -295,57 +529,100 @@ export class PrincipalPageComponent implements OnInit {
   }
 
   loadUserData(uid: string) {
+    this.isLoading = true;
     this.firestore.collection('users').doc(uid).valueChanges().pipe(
       switchMap((userData: any) => {
         if (userData) {
+          // Guardamos datos completos (isAdmin)
+          this.currentUserData = userData as UserData;
+
           this.userName = userData.name;
           this.userEmail = userData.email;
           this.userRole = userData.role;
-          // Ahora llamamos a loadSentencias sin pasar los parámetros, ya que userEmail y userRole están en la clase
+
+          // NUEVO: Chequeo de usuario inactivo
+          if (this.userRole === 'docente' && this.currentUserData.isActive === false) {
+            this.showInactiveAlert = true;
+          } else {
+            this.showInactiveAlert = false;
+          }
+
+          // Si es admin, cargamos usuarios
+          if (this.currentUserData.isAdmin) {
+            this.loadAllUsers();
+          }
+
+          // Ahora llamamos a loadSentencias
           return this.loadSentencias();
         } else {
           return of([]);
         }
-      })
+      }),
+      finalize(() => this.isLoading = false) // Asegura quitar el spinner
     ).subscribe((sentencias) => {
       // Directamente actualizamos el BehaviorSubject con las sentencias cargadas
       this._allSentencias.next(sentencias);
       this.searchSubject.next(this.searchText); // trigger initial filter
-      
+
       // Solo cargar paginación si no estamos en modo de búsqueda
       if (!this.isSearchMode) {
         this.loadPagedSentencias('init');
+      } else {
+        // Si estaba en búsqueda, quitar loading ya
+        this.isLoading = false;
       }
     });
   }
 
-  // loadSentencias ahora solo carga los datos relevantes al rol del usuario,
-  // y la lógica de isLockedForAcceptance se maneja en filteredSentencias$
+  /**
+   * Carga las sentencias desde Firestore basándose en el rol del usuario.
+   * - Administrador: Puede ver todo o filtrar por sus propias asignaciones.
+   * - Docente: Solo ve sentencias donde `email_docente` coincide con su email.
+   * - Estudiante: Solo ve sentencias donde `email_estudiante` coincide con su email.
+   * @returns Observable<Sentencia[]>
+   */
   loadSentencias(): Observable<Sentencia[]> {
     let query;
 
-    // Se cargan todas las sentencias si es administrador para poder calcular isLockedForAcceptance globalmente
-    // Si es docente o estudiante, se carga solo lo suyo para reducir el tráfico,
-    // pero la lógica de isLockedForAcceptance seguirá funcionando si ya hay una aceptada globalmente
-    if (this.userRole === 'estudiante' && this.userEmail) {
-      query = this.firestore.collection('sentencias', ref =>
-        ref.where('email_estudiante', '==', this.userEmail)
-      );
-    } else if (this.userRole === 'docente' && this.userEmail) {
+    const esAdmin = this.userRole === 'administrador' || this.currentUserData?.isAdmin;
+
+    // Si es admin y NO ha activado "solo mis sentencias", carga TODO
+    if (esAdmin && !this.soloMisSentencias) {
+      query = this.firestore.collection('sentencias');
+    }
+    // Si es admin PERO activó "solo mis sentencias", entra en la lógica de abajo (filtra por email_docente)
+    else if ((esAdmin && this.soloMisSentencias) || (this.userRole === 'docente' && this.userEmail)) {
+      // Admin filtrando por sí mismo O Docente normal
       query = this.firestore.collection('sentencias', ref =>
         ref.where('email_docente', '==', this.userEmail)
       );
-    } else if (this.userRole === 'administrador') {
-      query = this.firestore.collection('sentencias');
+    }
+    else if (this.userRole === 'estudiante' && this.userEmail) {
+      query = this.firestore.collection('sentencias', ref =>
+        ref.where('email_estudiante', '==', this.userEmail)
+      );
     } else {
       return of([]);
     }
 
     return query.snapshotChanges().pipe(
       map(actions => actions.map(a => {
-        const data = a.payload.doc.data() as Sentencia;
+        const data = a.payload.doc.data() as any; // Cast to any to handle timestamp conversion safely
         const id = a.payload.doc.id;
-        return { ...data, id };
+
+        const convertToDate = (field: any) => {
+          if (!field) return null;
+          if (typeof field.toDate === 'function') return field.toDate();
+          if (field.seconds !== undefined && field.nanoseconds !== undefined) {
+            return new Date(field.seconds * 1000 + field.nanoseconds / 1000000);
+          }
+          return field;
+        };
+
+        data.fecha_creacion = convertToDate(data.fecha_creacion);
+        data.fecha_actualizacion = convertToDate(data.fecha_actualizacion);
+
+        return { ...data, id } as Sentencia;
       }))
     );
   }
@@ -357,58 +634,112 @@ export class PrincipalPageComponent implements OnInit {
   redirectToAnalisis(sentencia: Sentencia) {
     this.router.navigate(['/analisis'], {
       queryParams: {
-        numero_proceso: sentencia.numero_proceso,
+        id: sentencia.id,
+        numero_proceso: sentencia.numero_proceso || 'SIN_PROCESO',
         asunto: sentencia.asunto,
         estudiante: sentencia.nombre_estudiante,
         docente: sentencia.nombre_docente
       }
-    });
+    }).then(success => console.log('Navigation success:', success))
+      .catch(err => console.error('Navigation error:', err));
   }
 
   onSearchTextChanged() {
-    console.log('🔍 onSearchTextChanged llamado con:', this.searchText);
-    console.log('🔍 Rol de usuario actual:', this.userRole);
-    
     // Resetear paginación cuando se inicia una búsqueda
-    if (this.searchText.trim() && this.userRole) {
-      console.log('🔍 Activando modo de búsqueda');
+    const hasActiveFilters =
+      (this.searchText && this.searchText.trim() !== '') ||
+      this.selectedPeriod !== 'all' ||
+      !!this.fechaInicio ||
+      !!this.fechaFin;
+
+    if (hasActiveFilters) {
       this.currentPage = 1;
       this.isSearchMode = true;
-      
+
       // Obtener todas las sentencias procesadas del observable
       this.filteredSentencias$.pipe(take(1)).subscribe(processedSentencias => {
         console.log('🔍 Total sentencias procesadas disponibles:', processedSentencias.length);
-        
+
         // Aplicar filtro según el rol
         let filtered: Sentencia[] = [];
-        
-        if (this.userRole === 'estudiante') {
-          filtered = processedSentencias.filter(s =>
-            s.email_estudiante?.toLowerCase().includes(this.searchText.toLowerCase())
-          );
-          console.log('🔍 Filtro estudiante - Resultados:', filtered.length);
-        } else if (this.userRole === 'docente') {
-          filtered = processedSentencias.filter(s =>
-            s.nombre_estudiante?.toLowerCase().includes(this.searchText.toLowerCase()) ||
-            s.numero_proceso.toLowerCase().includes(this.searchText.toLowerCase()) ||
-            s.asunto?.toLowerCase().includes(this.searchText.toLowerCase())
-          );
-          console.log('🔍 Filtro docente - Resultados:', filtered.length);
-        } else if (this.userRole === 'administrador') {
-          filtered = processedSentencias.filter(s =>
-            Object.values(s).some(value =>
-              value?.toString().toLowerCase().includes(this.searchText.toLowerCase())
-            )
-          );
-          console.log('🔍 Filtro administrador - Resultados:', filtered.length);
+
+        const esAdmin = this.currentUserData?.isAdmin || this.userRole === 'administrador' || this.userRole === 'docente';
+
+        // 1. Filtrado Base por Rol
+        let baseSentencias = processedSentencias;
+        if ((this.currentUserData?.isAdmin || this.userRole === 'administrador') && this.soloMisSentencias) {
+          baseSentencias = processedSentencias.filter(s => s.email_docente === this.userEmail);
         }
-        
+
+        // 2. Aplicar TODOS los filtros MANUALMENTE aquí (Texto + Periodo + Fecha)
+        filtered = baseSentencias.filter(s => {
+          // A. TEXTO
+          let matchText = true;
+          if (this.searchText && this.searchText.trim()) {
+            const term = this.searchText.toLowerCase();
+
+            const isAdmin = this.currentUserData?.isAdmin || this.userRole === 'administrador';
+
+            if (isAdmin) {
+              matchText = Object.values(s).some(value =>
+                value && value.toString().toLowerCase().includes(term)
+              );
+            } else if (this.userRole === 'docente') {
+              matchText = !!(
+                (s.nombre_estudiante && s.nombre_estudiante.toLowerCase().includes(term)) ||
+                (s.numero_proceso && s.numero_proceso.toLowerCase().includes(term)) ||
+                (s.asunto && s.asunto.toLowerCase().includes(term))
+              );
+            } else if (this.userRole === 'estudiante') {
+              matchText = s.email_estudiante?.toLowerCase().includes(term) || false;
+            }
+          }
+
+          // B. PERIODO
+          let matchPeriod = true;
+          if (this.selectedPeriod !== 'all') {
+            if (this.selectedPeriod === 'none') {
+              matchPeriod = !s.periodo_academico || s.periodo_academico === '';
+            } else {
+              matchPeriod = s.periodo_academico === this.selectedPeriod;
+            }
+          }
+
+          // C. FECHAS
+          let matchDate = true;
+          if (this.fechaInicio || this.fechaFin) {
+            let sDate: Date | null = null;
+            if (s.fecha_creacion && typeof s.fecha_creacion.toDate === 'function') {
+              sDate = s.fecha_creacion.toDate();
+            } else if (s.fecha_creacion) {
+              sDate = new Date(s.fecha_creacion);
+            } else {
+              matchDate = false;
+            }
+
+            if (matchDate && sDate) {
+              if (this.fechaInicio) {
+                const [year, month, day] = this.fechaInicio.split('-').map(Number);
+                const start = new Date(year, month - 1, day, 0, 0, 0, 0);
+                if (sDate < start) matchDate = false;
+              }
+              if (this.fechaFin && matchDate) {
+                const [year, month, day] = this.fechaFin.split('-').map(Number);
+                const end = new Date(year, month - 1, day, 23, 59, 59, 999);
+                if (sDate > end) matchDate = false;
+              }
+            }
+          }
+
+          return matchText && matchPeriod && matchDate;
+        });
+
         // Actualizar resultados de búsqueda
         this.searchResults = filtered;
         console.log('🔍 Resultados de búsqueda guardados:', this.searchResults.length);
         this.loadSearchResults();
       });
-      
+
     } else {
       console.log('🔍 Desactivando modo de búsqueda');
       this.isSearchMode = false;
@@ -416,9 +747,23 @@ export class PrincipalPageComponent implements OnInit {
       // Volver a la paginación normal
       this.loadPagedSentencias('init');
     }
-    
+
     // Actualizar el BehaviorSubject para mantener la consistencia
     this.searchSubject.next(this.searchText);
+  }
+
+  loadSearchResults() {
+    if (this.isSearchMode && this.searchResults.length >= 0) { // >= 0 para manejar "0 resultados"
+      this.updatePaginationOnSearch();
+    }
+  }
+
+  updatePaginationOnSearch() {
+    this.totalPages = Math.ceil(this.searchResults.length / this.pageSize);
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    const endIndex = startIndex + this.pageSize;
+    this.pagedSentencias = this.searchResults.slice(startIndex, endIndex);
+    this.loadingPage = false;
   }
 
   // Método para mostrar mensajes
@@ -439,8 +784,11 @@ export class PrincipalPageComponent implements OnInit {
 
   // Método para limpiar la búsqueda general
   limpiarBusquedaGeneral() {
-    console.log('🔍 Limpiando búsqueda general');
+    // console.log('🔍 Limpiando búsqueda general');
     this.searchText = '';
+    this.selectedPeriod = 'all'; // Resetear periodo
+    this.fechaInicio = null;     // Resetear fecha inicio
+    this.fechaFin = null;        // Resetear fecha fin
     this.isSearchMode = false;
     this.searchResults = [];
     this.currentPage = 1;
@@ -486,7 +834,8 @@ export class PrincipalPageComponent implements OnInit {
     }
 
     try {
-      console.log('🔍 Buscando sentencias con número de proceso:', numeroProceso);
+      // console.log('🔍 Buscando sentencias con número de proceso:', numeroProceso);
+      this.isLoading = true;
 
       // Buscar TODAS las sentencias con ese número de proceso
       const sentenciaSnapshot = await this.firestore
@@ -496,7 +845,8 @@ export class PrincipalPageComponent implements OnInit {
 
       if (sentenciaSnapshot.empty) {
         this.sentenciaEncontrada = null;
-        console.log('No se encontró ninguna sentencia con ese número de proceso');
+        this.mostrarMensaje('No se encontró ninguna sentencia', false);
+        this.isLoading = false;
         return;
       }
 
@@ -521,14 +871,13 @@ export class PrincipalPageComponent implements OnInit {
         );
         sentenciaParaMostrar = sentenciaDocente || sentenciaSnapshot.docs[0];
       } else {
-        // Si es administrador o estudiante, mostrar la primera encontrada (o la más relevante si tienes un criterio)
+        // Si es administrador o estudiante, mostrar la primera encontrada
         sentenciaParaMostrar = sentenciaSnapshot.docs[0];
       }
 
       const sentenciaData = sentenciaParaMostrar.data() as Sentencia;
 
-      // Buscar el estado de bloqueo (si usas una colección 'locks' separada)
-      // Si el bloqueo se basa en el estado 'aceptar' de la sentencia, esto podría simplificarse
+      // Buscar el estado de bloqueo
       const lockDoc = await this.firestore.doc(`locks/${numeroProceso}`).get().toPromise();
       const lockData = lockDoc?.data() as { locked?: boolean } | undefined;
 
@@ -541,12 +890,14 @@ export class PrincipalPageComponent implements OnInit {
     } catch (error) {
       // console.error('Error al buscar la sentencia:', error);
       console.log('Error al buscar la sentencia');
+    } finally {
+      this.isLoading = false;
     }
   }
 
   // Método para obtener el texto del estado de bloqueo
   getEstadoBloqueo(sentencia: Sentencia): string {
-    return sentencia.isLocked ? 'Finalizada' : 'En proceso';
+    return sentencia.isLocked ? 'Finalizada (Bloqueada)' : 'En proceso';
   }
 
   abrirEdicionEstado(sentencia: Sentencia) {
@@ -558,47 +909,52 @@ export class PrincipalPageComponent implements OnInit {
 
   // Método corregido para editar estado (administrador)
   async guardarEdicionEstado() {
-    if (!this.sentenciaEditar || !this.nuevoEstado || !this.razonTexto.trim()) {
+    if (!this.sentenciaEditar || !this.sentenciaEditar.id || !this.nuevoEstado || !this.razonTexto.trim()) {
       console.error('Falta información necesaria para actualizar el estado');
+      if (!this.razonTexto.trim()) this.showNotification('Debe ingresar una razón', 'error');
       return;
     }
 
     try {
-      const querySnapshot = await this.firestore
-        .collection('sentencias')
-        .ref.where('numero_proceso', '==', this.sentenciaEditar.numero_proceso)
-        .where('email_estudiante', '==', this.sentenciaEditar.email_estudiante)
-        .where('email_docente', '==', this.sentenciaEditar.email_docente)
-        .limit(1)
-        .get();
+      this.isLoading = true;
+      // ACTUALIZACIÓN DIRECTA POR ID
+      const docRef = this.firestore.collection('sentencias').doc(this.sentenciaEditar.id);
 
-      if (!querySnapshot.empty) {
-        const docSnapshot = querySnapshot.docs[0];
+      const updateData = {
+        estado: this.nuevoEstado,
+        razon: this.razonTexto.trim(),
+        fecha_actualizacion: new Date(),
+        editado_por: this.userEmail,
+      };
 
-        const updateData = {
-          estado: this.nuevoEstado,
-          razon: this.razonTexto.trim(),
-          fecha_actualizacion: new Date(),
-          editado_por: this.userEmail,
-        };
+      await docRef.update(updateData);
+      console.log('✅ Estado actualizado exitosamente');
 
-        await docSnapshot.ref.update(updateData);
-        console.log('✅ Estado actualizado exitosamente');
+      this.closeEditarEstadoOverlay();
+      // this.loadUserData(this.user.uid); // Comentado para evitar recarga completa
 
-        this.closeEditarEstadoOverlay();
-        this.loadUserData(this.user.uid); // Recargar datos para reflejar cambios
-        this.showNotification('Estado de sentencia actualizado.', 'success');
-      } else {
-        console.error('❌ No se encontró la sentencia específica para editar');
-        this.showNotification('No se encontró la sentencia para editar.', 'error');
-      }
+      // Recargar SOLO las sentencias para refrescar la UI sin perder el contexto de búsqueda/filtros
+      this.loadSentencias().subscribe(sentencias => {
+        this._allSentencias.next(sentencias);
+
+        if (this.isSearchMode) {
+          console.log('🔄 Refrescando búsqueda actual (Edición Estado)...');
+          this.onSearchTextChanged(); // Re-aplicar filtros actuales
+        } else {
+          console.log('🔄 Refrescando lista paginada (Edición Estado)...');
+          this.loadPagedSentencias('init');
+        }
+      });
+      this.showNotification('Estado de sentencia actualizado.', 'success');
+
     } catch (error) {
       console.error('❌ Error al actualizar el estado:', error);
       this.showNotification('Error al actualizar el estado de la sentencia.', 'error');
+    } finally {
+      this.isLoading = false;
     }
   }
 
-  // Method to close edit status overlay
   closeEditarEstadoOverlay() {
     this.showEditarEstadoOverlay = false;
     this.sentenciaEditar = null;
@@ -611,103 +967,12 @@ export class PrincipalPageComponent implements OnInit {
     this.closeEditarEstadoOverlay();
   }
 
-  onFileSelected(event: any) {
-    const input = event.target;
-    const file = input.files[0];
-    if (!file) return;
-
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: async (result: { data: { email: string; name: string; }[]; }) => {
-        const rows = result.data as { email: string; name: string }[];
-
-        for (const row of rows) {
-          const email = row.email?.trim().toLowerCase();
-          const name = row.name?.trim().toUpperCase();
-
-          if (!email || !name) continue;
-
-          const userQuery = await this.firestore.collection('users', ref =>
-            ref.where('email', '==', email)
-          ).get().toPromise();
-
-          if (userQuery?.empty) {
-            await this.firestore.collection('users').add({
-              email,
-              name,
-              role: 'docente'
-            });
-          }
-        }
-
-        this.showNotification('Carga de docentes completa.', 'success');
-        input.value = '';
-      },
-      error: (err: any) => {
-        console.error('Error al procesar el CSV:', err);
-        this.showNotification('Error al procesar el archivo CSV.', 'error');
-        input.value = '';
-      }
-    });
-  }
-
   showNotification(message: string, type: 'success' | 'error') {
     this.alert = message;
     this.alertype = type;
     setTimeout(() => {
       this.alert = '';
     }, 4000); // Se oculta después de 4 segundos
-  }
-
-  procesarArchivo(): void {
-    if (!this.archivoSeleccionado) return;
-
-    const reader = new FileReader();
-
-    reader.onload = (e: any) => {
-      const contenido = e.target.result as string;
-
-      // Si es un CSV simple, separado por comas: nombre,email
-      const lineas = contenido.split('\n');
-      this.docentesCargados = [];
-
-      for (let linea of lineas) {
-        const [nombre, email] = linea.trim().split(',');
-        if (nombre && email) {
-          this.docentesCargados.push({ nombre, email });
-        }
-      }
-    };
-
-    reader.readAsText(this.archivoSeleccionado);
-  }
-
-  async cargarUsuariosDesdeCSV(usuarios: { nombre: string; email: string }[]) {
-    const batch = this.firestore.firestore.batch(); // Lote para optimización
-
-    for (const usuario of usuarios) {
-      const docRef = this.firestore.collection('users').doc(usuario.email).ref;
-
-      const existingDoc = await docRef.get();
-      if (!existingDoc.exists) {
-        // Solo agregar si no existe
-        batch.set(docRef, {
-          name: usuario.nombre,
-          email: usuario.email,
-          role: 'docente',
-        });
-      } else {
-        console.log(`El usuario con email ${usuario.email} ya existe, se omite.`);
-      }
-    }
-
-    try {
-      await batch.commit();
-      console.log('Carga finalizada sin duplicados');
-    } catch (error) {
-      console.error('Error al guardar usuarios desde CSV:', error);
-    }
   }
 
   // Método corregido para editar sentencia en principal-page.component.ts
@@ -719,7 +984,23 @@ export class PrincipalPageComponent implements OnInit {
     console.log('📋 Buscando en', sentencias.length, 'sentencias');
     let sentencia;
 
-    if (this.userRole === 'docente') {
+    // Verificar si es Admin (aunque sea estudiante)
+    if (this.currentUserData?.isAdmin || this.userRole === 'administrador') {
+      sentencia = sentencias.find(s =>
+        s.numero_proceso === numero_proceso &&
+        s.email_estudiante === email_estudiante
+      );
+      // Si no lo encuentra exacto, intentar búsqueda más laxa solo por proceso
+      if (!sentencia) {
+        sentencia = sentencias.find(s => s.numero_proceso === numero_proceso);
+      }
+
+      if (!sentencia) {
+        console.warn('❌ No se encontró coincidencia exacta para Admin.');
+      }
+    }
+    // PRIORIDAD 2: Roles normales
+    else if (this.userRole === 'docente') {
       sentencia = sentencias.find(s =>
         s.numero_proceso === numero_proceso &&
         s.email_docente === this.userEmail
@@ -729,21 +1010,13 @@ export class PrincipalPageComponent implements OnInit {
         s.numero_proceso === numero_proceso &&
         s.email_estudiante === this.userEmail
       );
-    } else if (this.userRole === 'administrador') {
-      sentencia = sentencias.find(s =>
-        s.numero_proceso === numero_proceso &&
-        s.email_estudiante === email_estudiante &&
-        s.email_docente === email_docente
-      );
-      if (!sentencia) {
-        console.warn('❌ No se encontró coincidencia exacta, revisa los parámetros.');
-      }
     }
 
     if (sentencia) {
-      console.log('✅ Sentencia encontrada para editar:');
+      console.log('✅ Sentencia encontrada para editar:', sentencia.id);
       this.router.navigate(['/editar-sentencia'], {
         queryParams: {
+          id: sentencia.id,
           numero_proceso: sentencia.numero_proceso,
           email_estudiante: sentencia.email_estudiante,
           email_docente: sentencia.email_docente
@@ -775,6 +1048,7 @@ export class PrincipalPageComponent implements OnInit {
       return;
     }
 
+    this.isLoading = true;
     this.firestore
       .collection('sentencias')
       .doc(sentencia.id)
@@ -787,7 +1061,8 @@ export class PrincipalPageComponent implements OnInit {
       .catch((error) => {
         console.error('Error al eliminar la sentencia:', error);
         this.mostrarMensaje('Error al eliminar la sentencia.', true);
-      });
+      })
+      .finally(() => this.isLoading = false);
 
     this.sentenciaAEliminar = null;
   }
@@ -821,166 +1096,23 @@ export class PrincipalPageComponent implements OnInit {
     }
   }
 
-  async generarReporteExcel() {
-    try {
-      console.log('📊 Iniciando generación de reporte Excel...');
-      
-      const sentenciasSnap = await this.firestore.collection('sentencias').get().toPromise();
-      const sentencias = sentenciasSnap?.docs.map(doc => doc.data()) || [];
-
-      const usuariosSnap = await this.firestore.collection('users').get().toPromise();
-      const usuarios = usuariosSnap?.docs.map(doc => doc.data()) || [];
-
-      const locksSnap = await this.firestore.collection('locks').get().toPromise();
-      const locks = locksSnap?.docs.map(doc => doc.data()) || [];
-
-      console.log(`📊 Procesando ${sentencias.length} sentencias...`);
-
-      // Preparar datos para Excel
-      const datosExcel = [];
-
-      // Agregar encabezados
-      datosExcel.push([
-        'Nombre docente',
-        'Correo docente', 
-        'Nombre estudiante',
-        'Correo estudiante',
-        'Número de proceso',
-        'Asunto',
-        'Estado',
-        'Razón',
-        'Periodo académico',
-        'Nombre docente antiguo',
-        'Correo docente antiguo',
-        'Fecha de actualización',
-        'Actualizado por'
-      ]);
-
-      // Procesar cada sentencia
-      for (const sentencia of sentencias) {
-        const s = sentencia as any;
-
-        const nombreDocente = s.nombre_docente || '';
-        const nombreEstudiante = s.nombre_estudiante || '';
-        const correoEstudiante = s.email_estudiante || s.email || '';
-        const numeroProceso = s.numero_proceso || '';
-        const asunto = s.asunto || '';
-        const estadoOriginal = s.estado || 'Pendiente';
-        const razon = s.razon || '';
-        const periodoAcademico = s.periodo_academico || '';
-        
-        let correoDocente = s.correo_docente || '';
-        if (!correoDocente) {
-          const usuarioDocente = usuarios.find((u: any) => u.name === nombreDocente) as { email?: string } | undefined;
-          correoDocente = usuarioDocente?.email || 'No encontrado';
-        }
-        
-        const lock = locks.find((l: any) => l.numero_proceso === numeroProceso) as { locked?: boolean } | undefined;
-        const locked = lock?.locked === true;
-        const estadoFinal = locked ? 'Finalizado' : estadoOriginal;
-
-        // Campos de docente antiguo
-        const nombreDocenteAntiguo = s.nombre_docente_antiguo || '';
-        const correoDocenteAntiguo = s.email_docente_antiguo || '';
-        
-        // Fechas
-        const fechaActualizacion = s.fecha_actualizacion ? 
-          new Date(s.fecha_actualizacion.toDate ? s.fecha_actualizacion.toDate() : s.fecha_actualizacion).toLocaleDateString('es-ES') : '';
-        const actualizadoPor = s.actualizado_por || s.editado_por || '';
-
-        datosExcel.push([
-          nombreDocente,
-          correoDocente,
-          nombreEstudiante,
-          correoEstudiante,
-          numeroProceso,
-          asunto,
-          estadoFinal,
-          razon,
-          periodoAcademico,
-          nombreDocenteAntiguo,
-          correoDocenteAntiguo,
-          fechaActualizacion,
-          actualizadoPor
-        ]);
-      }
-
-      // Crear libro de Excel
-      const workbook = XLSX.utils.book_new();
-      
-      // Crear hoja de datos
-      const worksheet = XLSX.utils.aoa_to_sheet(datosExcel);
-      
-      // Configurar estilos para los encabezados
-      const headerStyle = {
-        font: { bold: true, color: { rgb: "FFFFFF" } },
-        fill: { fgColor: { rgb: "4472C4" } },
-        alignment: { horizontal: "center", vertical: "center" }
-      };
-
-      // Aplicar estilos a los encabezados (primera fila)
-      const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-      for (let col = range.s.c; col <= range.e.c; col++) {
-        const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
-        if (!worksheet[cellAddress]) {
-          worksheet[cellAddress] = { v: '' };
-        }
-        worksheet[cellAddress].s = headerStyle;
-      }
-
-      // Ajustar ancho de columnas
-      const columnWidths = [
-        { wch: 20 }, // Nombre docente
-        { wch: 25 }, // Correo docente
-        { wch: 20 }, // Nombre estudiante
-        { wch: 25 }, // Correo estudiante
-        { wch: 15 }, // Número de proceso
-        { wch: 30 }, // Asunto
-        { wch: 12 }, // Estado
-        { wch: 40 }, // Razón
-        { wch: 15 }, // Periodo académico
-        { wch: 20 }, // Nombre docente antiguo
-        { wch: 25 }, // Correo docente antiguo
-        { wch: 15 }, // Fecha de actualización
-        { wch: 20 }  // Actualizado por
-      ];
-      worksheet['!cols'] = columnWidths;
-
-      // Agregar la hoja al libro
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte Sentencias');
-
-      // Generar nombre del archivo con fecha
-      const fecha = new Date();
-      const dia = fecha.getDate().toString().padStart(2, '0');
-      const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
-      const año = fecha.getFullYear();
-      const hora = fecha.getHours().toString().padStart(2, '0');
-      const minuto = fecha.getMinutes().toString().padStart(2, '0');
-      const fechaStr = `${dia}-${mes}-${año}_${hora}-${minuto}`;
-      const nombreArchivo = `reporte_sentencias_${fechaStr}.xlsx`;
-
-      // Generar el archivo Excel
-      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      
-      // Descargar el archivo
-      saveAs(blob, nombreArchivo);
-      
-      console.log(`✅ Reporte Excel generado exitosamente: ${nombreArchivo}`);
-      this.showNotification(`Reporte Excel generado: ${nombreArchivo}`, 'success');
-
-    } catch (error) {
-      console.error('❌ Error generando el reporte Excel:', error);
-      this.showNotification('Error al generar el reporte Excel.', 'error');
-    }
-  }
+  // Se eliminó la función generarReporteExcel
 
   loadPagedSentencias(direction: 'init' | 'next' | 'prev' = 'init') {
     this.loadingPage = true;
+    this.isLoading = true; // Mostrar spinner general también si prefieres
     let queryFn: any;
     let userFilter = (ref: any) => ref;
 
-    if (this.userRole === 'estudiante' && this.userEmail) {
+    // ✅ CORRECCIÓN DE FILTRO DE SENTENCIAS PARA ADMIN
+    const esAdmin = this.currentUserData?.isAdmin || this.userRole === 'administrador';
+
+    if (esAdmin) {
+      // Admin ve todo, no aplicamos filtro a menos que active el toggle
+      if (this.soloMisSentencias && this.userEmail) {
+        userFilter = (ref: any) => ref.where('email_docente', '==', this.userEmail);
+      }
+    } else if (this.userRole === 'estudiante' && this.userEmail) {
       userFilter = (ref: any) => ref.where('email_estudiante', '==', this.userEmail);
     } else if (this.userRole === 'docente' && this.userEmail) {
       userFilter = (ref: any) => ref.where('email_docente', '==', this.userEmail);
@@ -1002,9 +1134,26 @@ export class PrincipalPageComponent implements OnInit {
     }
 
     this.firestore.collection('sentencias', queryFn).get().subscribe(snapshot => {
-      const sentencias = snapshot.docs.map(doc => ({ ...(doc.data() as Sentencia), id: doc.id }));
+      const sentencias = snapshot.docs.map(doc => {
+        const data = doc.data() as any;
+        const id = doc.id;
+
+        const convertToDate = (field: any) => {
+          if (!field) return null;
+          if (typeof field.toDate === 'function') return field.toDate();
+          if (field.seconds !== undefined && field.nanoseconds !== undefined) {
+            return new Date(field.seconds * 1000 + field.nanoseconds / 1000000);
+          }
+          return field;
+        };
+
+        data.fecha_creacion = convertToDate(data.fecha_creacion);
+        data.fecha_actualizacion = convertToDate(data.fecha_actualizacion);
+
+        return { ...data, id } as Sentencia;
+      });
       this.pagedSentencias = sentencias;
-      
+
       // Actualizar array de páginas visitadas
       if (sentencias.length > 0) {
         if (direction === 'init') {
@@ -1016,12 +1165,13 @@ export class PrincipalPageComponent implements OnInit {
           this.visitedPages.pop();
         }
       }
-      
+
       // Corregir el cálculo del estado de paginación
       this.isFirstPage = this.visitedPages.length <= 1;
       this.isLastPage = sentencias.length < this.pageSize;
-      
+
       this.loadingPage = false;
+      this.isLoading = false;
     });
   }
 
@@ -1041,37 +1191,7 @@ export class PrincipalPageComponent implements OnInit {
   }
 
   // Método para cargar resultados de búsqueda
-  loadSearchResults() {
-    console.log('🔍 loadSearchResults llamado');
-    console.log('🔍 isSearchMode:', this.isSearchMode);
-    console.log('🔍 searchResults.length:', this.searchResults.length);
-    
-    if (this.isSearchMode && this.searchResults.length > 0) {
-      const startIndex = (this.currentPage - 1) * this.pageSize;
-      const endIndex = startIndex + this.pageSize;
-      this.pagedSentencias = this.searchResults.slice(startIndex, endIndex);
-      
-      console.log('🔍 Página actual:', this.currentPage);
-      console.log('🔍 startIndex:', startIndex, 'endIndex:', endIndex);
-      console.log('🔍 pagedSentencias.length:', this.pagedSentencias.length);
-      
-      // Actualizar estado de paginación para búsqueda
-      this.isFirstPage = this.currentPage === 1;
-      this.isLastPage = endIndex >= this.searchResults.length;
-      this.totalPages = Math.ceil(this.searchResults.length / this.pageSize);
-      this.hasMorePages = this.currentPage < this.totalPages;
-      
-      console.log('🔍 Estado paginación - isFirstPage:', this.isFirstPage, 'isLastPage:', this.isLastPage);
-      console.log('🔍 Estado paginación - totalPages:', this.totalPages, 'hasMorePages:', this.hasMorePages);
-    } else if (this.isSearchMode && this.searchResults.length === 0) {
-      console.log('🔍 No hay resultados de búsqueda');
-      this.pagedSentencias = [];
-      this.isFirstPage = true;
-      this.isLastPage = true;
-      this.totalPages = 0;
-      this.hasMorePages = false;
-    }
-  }
+
 
   // Método para navegar en resultados de búsqueda
   nextSearchPage() {
@@ -1099,14 +1219,14 @@ export class PrincipalPageComponent implements OnInit {
     console.log('🔍 isSearchMode:', this.isSearchMode);
     console.log('🔍 searchResults.length:', this.searchResults.length);
     console.log('🔍 pagedSentencias.length:', this.pagedSentencias.length);
-    
+
     const allSentencias = this._allSentencias.getValue();
     console.log('🔍 Total sentencias cargadas:', allSentencias.length);
-    
+
     if (allSentencias.length > 0) {
       console.log('🔍 Primera sentencia de ejemplo:', allSentencias[0]);
     }
-    
+
     if (this.searchResults.length > 0) {
       console.log('🔍 Primer resultado de búsqueda:', this.searchResults[0]);
     }

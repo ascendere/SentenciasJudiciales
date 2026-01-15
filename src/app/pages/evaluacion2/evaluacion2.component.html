@@ -17,10 +17,10 @@
     <div>
         <div class="checkbox-class">
             <h2 class="titulo">MOTIVACIÓN CORRECTA</h2>
-    <p style="font-family: Poppins;"> Todas las preguntas marcadas con un asterisco (*) son obligatorias. </p>
+            <p style="font-family: Poppins;"> Todas las preguntas marcadas con un asterisco (*) son obligatorias. </p>
 
             <h3 class="tittle-check">SEÑALE LA MATERIA CORRESPONDIENTE DE LA SENTENCIA *</h3>
-
+            <!-- Selección de Materia -->
             <h5 class="description">Este cuestionario aplica para jueces de primer nivel en las materias de:</h5>
             <div class="options">
                 <!-- Columna 1 -->
@@ -171,8 +171,8 @@
                 </div>
             </div>
 
-            <button class="rate" *ngIf="isDocente" type="button"
-                (click)="toggleCalificar('sentenceSubject')">Calificar *</button>
+            <button class="rate" *ngIf="isDocente" type="button" (click)="toggleCalificar('sentenceSubject')">Calificar
+                *</button>
             <div *ngIf="calificarState['sentenceSubject']">
                 <div class="bttns-rate">
                     <button class="correct-button" type="button"
@@ -199,7 +199,7 @@
                 cuenta que:
                 Totalmente en desacuerdo (1), Ni desacuerdo/Ni en desacuerdo (2), Muy de acuerdo (3)
             </h5>
-            <!-- Formulario de las diferentes seccion con opcion de radio -->
+            <!-- Formulario de las diferentes seccion con opcion de radio para escalas Likert -->
             <div *ngFor="let section of sections; let sectionIndex = index" class="section">
                 <h3 class="titulo"><strong>Variable {{section.id}} : </strong> {{ section.title }}</h3>
                 <div class="likert-table">
@@ -220,7 +220,8 @@
                     <div
                         *ngIf="getCalificacionValue('section' + sectionIndex + '_calificacion') || getRetroalimentacionValue('section' + sectionIndex + '_retroalimentacion') !== 'Sin retroalimentación'">
                         <div class="calificaciones">
-                            <div class="calificacion-display" [ngClass]="{
+                            <div class="calificacion-display"
+                                [ngClass]="{
                                 'calificacion-correcta': getCalificacionValue('section' + sectionIndex + '_calificacion') === 'Correcto',
                                 'calificacion-incorrecta': getCalificacionValue('section' + sectionIndex + '_calificacion') === 'Incorrecto',
                                 'calificacion-no-calificado': getCalificacionValue('section' + sectionIndex + '_calificacion') === 'No Calificado',}">
@@ -370,17 +371,43 @@
             </div>
         </div>
     </div>
-    <button class="bttn-stnd-g" type="submit">Guardar</button>
+
+    <!-- BOTÓN DE GUARDAR (Solo si no está bloqueado) -->
+    <button *ngIf="!isFormLocked" class="bttn-stnd-g" type="submit">Guardar</button>
 </form>
+
 <div *ngIf="mostrarMensaje" class="alerta">
     <p>{{ mensajeError }}</p>
 </div>
+<div *ngIf="mostrarMensajeExito" class="mensaje-exito"
+    style="background-color: #4CAF50; color: white; padding: 15px; text-align: center; margin: 10px 40px; border-radius: 5px;">
+    {{ mensajeExito }}
+</div>
+
+<!-- SECCIÓN DE BOTONES DE ACCIÓN -->
 <div class="bttn">
-    <button class="bttn-stnd" (click)="redirectToEvaluacion()">Evaluación</button>
-    <button *ngIf="isDocente" class="bttn-stnd" (click)="lockForm()">Bloquear Sentencia</button>
+    <button class="bttn-stnd" (click)="redirectToEvaluacion()">Anterior</button>
+
+    <!-- Loader -->
     <button class="custom-button" type="button" *ngIf="cargando">
         <div class="spinner"></div>
         <span class="button-text">Cargando...</span>
     </button>
-    <button class="bttn-stnd" [disabled]="!docenteSaved" (click)="finalizarEvaluacion()">Finalizar</button>
+
+    <!-- BOTONES DE BLOQUEO / DESBLOQUEO (Solo Docentes/Admins) -->
+    <ng-container *ngIf="isDocente">
+        <!-- Si NO está bloqueada -> Mostrar Bloquear -->
+        <button *ngIf="!isFormLocked" class="bttn-stnd" style="background-color: #172D5A;"
+            (click)="bloquearSentencia()">
+            <i class="fa-solid fa-lock"></i> Bloquear y Finalizar
+        </button>
+
+        <!-- Si ESTÁ bloqueada -> Mostrar Desbloquear -->
+        <button *ngIf="isFormLocked" class="bttn-stnd" style="background-color: #d32f2f;"
+            (click)="desbloquearSentencia()">
+            <i class="fa-solid fa-lock-open"></i> Desbloquear Sentencia
+        </button>
+    </ng-container>
+
+    <button class="bttn-stnd" (click)="finalizarEvaluacion()">Salir</button>
 </div>

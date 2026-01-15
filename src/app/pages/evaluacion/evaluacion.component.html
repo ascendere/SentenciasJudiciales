@@ -10,34 +10,39 @@
 <div class="eva">
   <form [formGroup]="evaluacionForm" (ngSubmit)="submitForm()">
 
-  <h3 class="titulo-analisis">Cuestionarios de estándar de suficiencia de la motivación </h3>
-  <p style="font-family: Poppins;"> Todas las preguntas marcadas con un asterisco (*) son obligatorias. </p>
+    <h3 class="titulo-analisis">Cuestionarios de estándar de suficiencia de la motivación </h3>
+    <p style="font-family: Poppins;"> Todas las preguntas marcadas con un asterisco (*) son obligatorias. </p>
 
     <div *ngIf="evaluacionForm.disabled" class="locked-message">
       Esta sentencia está bloqueada y no puede ser editada.
-  </div>
-  
+    </div>
+
     <div>
-        <div>
-          <h3 class="titulo">Tipo de motivación</h3>
-                <h5 class="titulo">Elija el tipo de deficiencia motivacional y complete lo solicitado en cada uno *</h5>
-          <div class="options">
-            <div>
-              <input type="radio" id="nonexistinence" name="motivationType" value="nonexistinence" formControlName="motivationType">
-              <label for="nonexistinence">Inexistencia</label>
-            </div>
-            <div>
-              <input type="radio" id="insufficiency" name="motivationType" value="insufficiency" formControlName="motivationType">
-              <label for="insufficiency">Insuficiencia</label>
-            </div>
-            <div>
-              <input type="radio" id="appearance" name="motivationType" value="appearance" formControlName="motivationType">
-              <label for="appearance">Apariencia</label>
-            </div>
+      <div>
+        <h3 class="titulo">Tipo de motivación</h3>
+        <!-- SECCIÓN: Tipo de Motivación -->
+        <!-- El estudiante debe seleccionar una de las 3 opciones -->
+        <h5 class="titulo">Elija el tipo de deficiencia motivacional y complete lo solicitado en cada uno *</h5>
+        <div class="options">
+          <div>
+            <input type="radio" id="nonexistinence" name="motivationType" value="nonexistinence"
+              formControlName="motivationType">
+            <label for="nonexistinence">Inexistencia</label>
+          </div>
+          <div>
+            <input type="radio" id="insufficiency" name="motivationType" value="insufficiency"
+              formControlName="motivationType">
+            <label for="insufficiency">Insuficiencia</label>
+          </div>
+          <div>
+            <input type="radio" id="appearance" name="motivationType" value="appearance"
+              formControlName="motivationType">
+            <label for="appearance">Apariencia</label>
           </div>
         </div>
-      <button class="rate" *ngIf="isDocente" type="button"
-        (click)="toggleCalificar('motivationType')">Calificar *</button>
+      </div>
+      <button class="rate" *ngIf="isDocente" type="button" (click)="toggleCalificar('motivationType')">Calificar
+        *</button>
       <div *ngIf="calificarState['motivationType']">
         <div class="bttns-rate">
           <button class="correct-button"
@@ -67,29 +72,29 @@
       </div>
     </div>
     <hr>
-    
-    <!-- Formulario de inexistencia -->
+
+    <!-- ============================================== -->
+    <!--          FORMULARIO DE INEXISTENCIA            -->
+    <!-- Se muestra si selecciona 'Inexistencia'        -->
+    <!-- ============================================== -->
     <div [hidden]="evaluacionForm.get('motivationType')?.value !== 'nonexistinence'" formGroupName="nonexistinence">
       <h2 class="titulo">Inexistencia</h2>
-    <!-- Fundamentacion normativa en formulario de inexistencia -->
+      <!-- Fundamentacion normativa en formulario de inexistencia -->
       <h3 class="titulo">Fundamentación normativa</h3>
       <div>
         <h4 class="titulo-eva">¿Carece totalmente de fundamentación normativa? *</h4>
         <label>
-        <h4 class="titulo-eva">Responda si/no *</h4>
-          <input type="radio" 
-                 [value]="'Si'" 
-                 [checked]="isRadioSelected('nonexistinence.lackFoundationNormative', 'Si')"
-                 (change)="setRadioValue('nonexistinence.lackFoundationNormative', 'Si')"
-                 formControlName="lackFoundationNormative"> Si
+          <h4 class="titulo-eva">Responda si/no *</h4>
+          <input type="radio" [value]="'Si'" [checked]="isRadioSelected('nonexistinence.lackFoundationNormative', 'Si')"
+            (change)="setRadioValue('nonexistinence.lackFoundationNormative', 'Si')"
+            formControlName="lackFoundationNormative"> Si
         </label>
         <label>
-          <input type="radio" 
-                 [value]="'No'" 
-                 [checked]="isRadioSelected('nonexistinence.lackFoundationNormative', 'No')"
-                 (change)="setRadioValue('nonexistinence.lackFoundationNormative', 'No')"
-                 formControlName="lackFoundationNormative"> No
-        </label>      </div>
+          <input type="radio" [value]="'No'" [checked]="isRadioSelected('nonexistinence.lackFoundationNormative', 'No')"
+            (change)="setRadioValue('nonexistinence.lackFoundationNormative', 'No')"
+            formControlName="lackFoundationNormative"> No
+        </label>
+      </div>
       <div>
         <app-caja-texto name="reasonsNormative" [disabled]="evaluacionForm.disabled" formControlName="reasonsNormative"
           [titulo]="'¿Por qué? *'">
@@ -135,27 +140,21 @@
         </div>
       </div>
       <hr>
-      
+
       <!-- Fundamentacion fatica en formulario de inexistencia -->
       <h3 class="titulo">Fundamentación fáctica</h3>
       <div>
         <h4 class="titulo-eva">¿Carece totalmente de fundamentación fáctica? *</h4>
         <label>
           <h4 class="titulo-eva">Responda si/no *</h4>
-          <input type="radio" 
-                 [value]="'Si'" 
-                 [checked]="isRadioSelected('lackFoundationFactual', 'Si')" 
-                 (change)="setRadioValue('lackFoundationFactual', 'Si')" 
-                 formControlName="lackFoundationFactual"> Si
-      </label>
-      <label>
-          <input type="radio" 
-                 [value]="'No'" 
-                 [checked]="isRadioSelected('lackFoundationFactual', 'No')" 
-                 (change)="setRadioValue('lackFoundationFactual', 'No')" 
-                 formControlName="lackFoundationFactual"> No
-      </label>
-            </div>
+          <input type="radio" [value]="'Si'" [checked]="isRadioSelected('lackFoundationFactual', 'Si')"
+            (change)="setRadioValue('lackFoundationFactual', 'Si')" formControlName="lackFoundationFactual"> Si
+        </label>
+        <label>
+          <input type="radio" [value]="'No'" [checked]="isRadioSelected('lackFoundationFactual', 'No')"
+            (change)="setRadioValue('lackFoundationFactual', 'No')" formControlName="lackFoundationFactual"> No
+        </label>
+      </div>
       <div>
         <app-caja-texto name="reasonsFactual" [disabled]="evaluacionForm.disabled" formControlName="reasonsFactual"
           [titulo]="'¿Por qué? *'">
@@ -196,8 +195,11 @@
         </div>
       </div>
     </div>
-    
-    <!-- Aqui empieza el formulario para la insuficiencia -->
+
+    <!-- ============================================== -->
+    <!--          FORMULARIO DE INSUFICIENCIA           -->
+    <!-- Se muestra si selecciona 'Insuficiencia'       -->
+    <!-- ============================================== -->
     <div [hidden]="evaluacionForm.get('motivationType')?.value !== 'insufficiency'" formGroupName="insufficiency">
       <h2 class="titulo">Insuficiencia</h2>
       <!-- Fundamentacion normatica en insuficiencia -->
@@ -205,19 +207,13 @@
       <div>
         <h4 class="titulo-eva">¿Existe insuficiente fundamentación normativa? *</h4>
         <label>
-          <input type="radio" 
-                 [value]="'Si'" 
-                 [checked]="isRadioSelected('lackFoundationNormative', 'Si')" 
-                 (change)="setRadioValue('lackFoundationNormative', 'Si')" 
-                 formControlName="lackFoundationNormative"> Si
-      </label>
-      <label>
-          <input type="radio" 
-                 [value]="'No'" 
-                 [checked]="isRadioSelected('lackFoundationNormative', 'No')" 
-                 (change)="setRadioValue('lackFoundationNormative', 'No')" 
-                 formControlName="lackFoundationNormative"> No
-      </label>      
+          <input type="radio" [value]="'Si'" [checked]="isRadioSelected('lackFoundationNormative', 'Si')"
+            (change)="setRadioValue('lackFoundationNormative', 'Si')" formControlName="lackFoundationNormative"> Si
+        </label>
+        <label>
+          <input type="radio" [value]="'No'" [checked]="isRadioSelected('lackFoundationNormative', 'No')"
+            (change)="setRadioValue('lackFoundationNormative', 'No')" formControlName="lackFoundationNormative"> No
+        </label>
       </div>
       <div>
         <app-caja-texto name="reasonsNormative" formControlName="reasonsNormative" [disabled]="evaluacionForm.disabled"
@@ -249,7 +245,8 @@
           </button>
         </div>
         <div>
-          <app-caja-texto formControlName="normative_retroalimentacion" [titulo]="'Retroalimentación *'"></app-caja-texto>
+          <app-caja-texto formControlName="normative_retroalimentacion"
+            [titulo]="'Retroalimentación *'"></app-caja-texto>
         </div>
       </div>
       <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
@@ -262,25 +259,19 @@
         </div>
       </div>
       <hr>
-      
+
       <!-- Fundamentacion fatica en inuficiencia -->
       <h3 class="titulo">Fundamentación fáctica</h3>
       <div>
-        <h4 class="titulo-eva">¿Existe insuficiente fundamentación fáctica?  *</h4>
+        <h4 class="titulo-eva">¿Existe insuficiente fundamentación fáctica? *</h4>
         <label>
-          <input type="radio" 
-                 [value]="'Si'" 
-                 [checked]="isRadioSelected('lackFoundationFactual', 'Si')" 
-                 (change)="setRadioValue('lackFoundationFactual', 'Si')" 
-                 formControlName="lackFoundationFactual"> Si
-      </label>
-      <label>
-          <input type="radio" 
-                 [value]="'No'" 
-                 [checked]="isRadioSelected('lackFoundationFactual', 'No')" 
-                 (change)="setRadioValue('lackFoundationFactual', 'No')" 
-                 formControlName="lackFoundationFactual"> No
-      </label>      
+          <input type="radio" [value]="'Si'" [checked]="isRadioSelected('lackFoundationFactual', 'Si')"
+            (change)="setRadioValue('lackFoundationFactual', 'Si')" formControlName="lackFoundationFactual"> Si
+        </label>
+        <label>
+          <input type="radio" [value]="'No'" [checked]="isRadioSelected('lackFoundationFactual', 'No')"
+            (change)="setRadioValue('lackFoundationFactual', 'No')" formControlName="lackFoundationFactual"> No
+        </label>
       </div>
       <div>
         <app-caja-texto name="reasonsFactual" formControlName="reasonsFactual" [disabled]="evaluacionForm.disabled"
@@ -310,7 +301,8 @@
         </div>
         <div>
           <div>
-            <app-caja-texto formControlName="factual_retroalimentacion" [titulo]="'Retroalimentación *'"></app-caja-texto>
+            <app-caja-texto formControlName="factual_retroalimentacion"
+              [titulo]="'Retroalimentación *'"></app-caja-texto>
           </div>
         </div>
       </div>
@@ -324,18 +316,21 @@
         </div>
       </div>
     </div>
-    
-    <!-- Aqui empieza el formulario de apariencia -->
+
+    <!-- ============================================== -->
+    <!--          FORMULARIO DE APARIENCIA              -->
+    <!-- Se muestra si selecciona 'Apariencia'          -->
+    <!-- ============================================== -->
     <div [hidden]="evaluacionForm.get('motivationType')?.value !== 'appearance'" formGroupName="appearance">
       <h2 class="titulo">Apariencia</h2>
       <h5 class="titulo">En caso de seleccionar este tipo de deficiencia motivacional, proceda a identificar uno de
         los vicios
-        motivacionales de la  apariencia que constan a continuación.</h5>
-         <!-- Razón de la apariencia -->
-        <app-caja-texto name="appearanceReason" formControlName="appearanceReason"
-        [disabled]="evaluacionForm.disabled" [titulo]="'¿Por qué?'">
+        motivacionales de la apariencia que constan a continuación.</h5>
+      <!-- Razón de la apariencia -->
+      <app-caja-texto name="appearanceReason" formControlName="appearanceReason" [disabled]="evaluacionForm.disabled"
+        [titulo]="'¿Por qué?'">
       </app-caja-texto>
-         <!-- Opciones de la apariencia -->
+      <!-- Opciones de la apariencia -->
       <div class="appearance-options">
         <h3 class="titulo">Vicios motivacionales</h3>
         <h5 class="titulo ">Elija el tipo de vicio motivacional y complete lo solicitado en cada uno *</h5>
@@ -375,32 +370,27 @@
       </div>
 
       <!-- FORMULARIO DE INCOHERENCIA -->
-       <div *ngIf="evaluacionForm.get('appearance')?.get('motivationalHabit')?.value === 'incoherence'"
+      <div *ngIf="evaluacionForm.get('appearance')?.get('motivationalHabit')?.value === 'incoherence'"
         formGroupName="incoherence">
         <h3 class="titulo">Incoherencia</h3>
         <h3 class="titulo">Fundamentación Jurídica</h3>
         <div>
           <h4 class="titulo-eva">¿Existe incoherencia lógica normativa? *</h4>
           <label>
-            <input type="radio" 
-                   [value]="'Si'" 
-                   [checked]="isRadioSelected('existsLogicalNormative', 'Si')" 
-                   (change)="setRadioValue('existsLogicalNormative', 'Si')" 
-                   formControlName="existsLogicalNormative"> Si
-        </label>
-        <label>
-            <input type="radio" 
-                   [value]="'No'" 
-                   [checked]="isRadioSelected('existsLogicalNormative', 'No')" 
-                   (change)="setRadioValue('existsLogicalNormative', 'No')" 
-                   formControlName="existsLogicalNormative"> No
-        </label>
-                </div>
+            <input type="radio" [value]="'Si'" [checked]="isRadioSelected('existsLogicalNormative', 'Si')"
+              (change)="setRadioValue('existsLogicalNormative', 'Si')" formControlName="existsLogicalNormative"> Si
+          </label>
+          <label>
+            <input type="radio" [value]="'No'" [checked]="isRadioSelected('existsLogicalNormative', 'No')"
+              (change)="setRadioValue('existsLogicalNormative', 'No')" formControlName="existsLogicalNormative"> No
+          </label>
+        </div>
         <div>
           <app-caja-texto name="reasonsLogicaNormative" formControlName="reasonsLogicaNormative"
             [disabled]="evaluacionForm.disabled" [titulo]="'¿Por qué? *'">
           </app-caja-texto>
-          <div *ngIf="!isDocente && getRetroalimentacionValue('appearance.incoherence.logicaNormative_retroalimentacion')">
+          <div
+            *ngIf="!isDocente && getRetroalimentacionValue('appearance.incoherence.logicaNormative_retroalimentacion')">
             <button type="button" (click)="toggleRetroalimentacion('sentenceSubject')" class="bttn-toggle">
               {{ mostrarRetroalimentacion['sentenceSubject'] ? 'Ocultar' : 'Ver' }} retroalimentación
             </button>
@@ -450,7 +440,8 @@
           <app-caja-texto name="reasonsDecisionalNormative" formControlName="reasonsDecisionalNormative"
             [disabled]="evaluacionForm.disabled" [titulo]="'¿Por qué? *'">
           </app-caja-texto>
-          <div *ngIf="!isDocente && getRetroalimentacionValue('appearance.incoherence.decisionalNormative_retroalimentacion')">
+          <div
+            *ngIf="!isDocente && getRetroalimentacionValue('appearance.incoherence.decisionalNormative_retroalimentacion')">
             <button type="button" (click)="toggleRetroalimentacion('sentenceSubject')" class="bttn-toggle">
               {{ mostrarRetroalimentacion['sentenceSubject'] ? 'Ocultar' : 'Ver' }} retroalimentación
             </button>
@@ -493,25 +484,20 @@
         <div>
           <h4 class="titulo-eva">¿Existe incoherencia lógica fáctica? *</h4>
           <label>
-            <input type="radio" 
-                   [value]="'Si'" 
-                   [checked]="isRadioSelected('existsLogicalFactual', 'Si')" 
-                   (change)="setRadioValue('existsLogicalFactual', 'Si')" 
-                   formControlName="existsLogicalFactual"> Si
-        </label>
-        <label>
-            <input type="radio" 
-                   [value]="'No'" 
-                   [checked]="isRadioSelected('existsLogicalFactual', 'No')" 
-                   (change)="setRadioValue('existsLogicalFactual', 'No')" 
-                   formControlName="existsLogicalFactual"> No
-        </label>
-                </div>
+            <input type="radio" [value]="'Si'" [checked]="isRadioSelected('existsLogicalFactual', 'Si')"
+              (change)="setRadioValue('existsLogicalFactual', 'Si')" formControlName="existsLogicalFactual"> Si
+          </label>
+          <label>
+            <input type="radio" [value]="'No'" [checked]="isRadioSelected('existsLogicalFactual', 'No')"
+              (change)="setRadioValue('existsLogicalFactual', 'No')" formControlName="existsLogicalFactual"> No
+          </label>
+        </div>
         <div>
           <app-caja-texto name="reasonsLogicalFactual" formControlName="reasonsLogicalFactual"
             [disabled]="evaluacionForm.disabled" [titulo]="'¿Por qué? *'">
           </app-caja-texto>
-          <div *ngIf="!isDocente && getRetroalimentacionValue('appearance.incoherence.logicalFactual_retroalimentacion')">
+          <div
+            *ngIf="!isDocente && getRetroalimentacionValue('appearance.incoherence.logicalFactual_retroalimentacion')">
             <button type="button" (click)="toggleRetroalimentacion('sentenceSubject')" class="bttn-toggle">
               {{ mostrarRetroalimentacion['sentenceSubject'] ? 'Ocultar' : 'Ver' }} retroalimentación
             </button>
@@ -553,25 +539,20 @@
         <div>
           <h4 class="titulo-eva">¿Existe incoherencia decisional fáctica? *</h4>
           <label>
-            <input type="radio" 
-                   [value]="'Si'" 
-                   [checked]="isRadioSelected('existsDecisionalFactual', 'Si')" 
-                   (change)="setRadioValue('existsDecisionalFactual', 'Si')" 
-                   formControlName="existsDecisionalFactual"> Si
-        </label>
-        <label>
-            <input type="radio" 
-                   [value]="'No'" 
-                   [checked]="isRadioSelected('existsDecisionalFactual', 'No')" 
-                   (change)="setRadioValue('existsDecisionalFactual', 'No')" 
-                   formControlName="existsDecisionalFactual"> No
-        </label>
-                </div>
+            <input type="radio" [value]="'Si'" [checked]="isRadioSelected('existsDecisionalFactual', 'Si')"
+              (change)="setRadioValue('existsDecisionalFactual', 'Si')" formControlName="existsDecisionalFactual"> Si
+          </label>
+          <label>
+            <input type="radio" [value]="'No'" [checked]="isRadioSelected('existsDecisionalFactual', 'No')"
+              (change)="setRadioValue('existsDecisionalFactual', 'No')" formControlName="existsDecisionalFactual"> No
+          </label>
+        </div>
         <div>
           <app-caja-texto name="reasonsDecisionalFactual" formControlName="reasonsDecisionalFactual"
             [disabled]="evaluacionForm.disabled" [titulo]="'¿Por qué? *'">
           </app-caja-texto>
-          <div *ngIf="!isDocente && getRetroalimentacionValue('appearance.incoherence.decisionalFactual_retroalimentacion')">
+          <div
+            *ngIf="!isDocente && getRetroalimentacionValue('appearance.incoherence.decisionalFactual_retroalimentacion')">
             <button type="button" (click)="toggleRetroalimentacion('sentenceSubject')" class="bttn-toggle">
               {{ mostrarRetroalimentacion['sentenceSubject'] ? 'Ocultar' : 'Ver' }} retroalimentación
             </button>
@@ -614,20 +595,14 @@
         <div>
           <h4 class="titulo-eva">Señale si la sentencia analizada debe ser anulada por déficit de motivación *</h4>
           <label>
-            <input type="radio" 
-                   [value]="'Si'" 
-                   [checked]="isRadioSelected('lackMotivation', 'Si')" 
-                   (change)="setRadioValue('lackMotivation', 'Si')" 
-                   formControlName="lackMotivation"> Si
-        </label>
-        <label>
-            <input type="radio" 
-                   [value]="'No'" 
-                   [checked]="isRadioSelected('lackMotivation', 'No')" 
-                   (change)="setRadioValue('lackMotivation', 'No')" 
-                   formControlName="lackMotivation"> No
-        </label>
-                </div>
+            <input type="radio" [value]="'Si'" [checked]="isRadioSelected('lackMotivation', 'Si')"
+              (change)="setRadioValue('lackMotivation', 'Si')" formControlName="lackMotivation"> Si
+          </label>
+          <label>
+            <input type="radio" [value]="'No'" [checked]="isRadioSelected('lackMotivation', 'No')"
+              (change)="setRadioValue('lackMotivation', 'No')" formControlName="lackMotivation"> No
+          </label>
+        </div>
         <div>
           <app-caja-texto name="reasonsMotivation" formControlName="reasonsMotivation"
             [disabled]="evaluacionForm.disabled" [titulo]="'¿Por qué? *'">
@@ -673,33 +648,31 @@
       </div>
 
       <!-- FORMULARIO DE INATINENCIA -->
-        <div *ngIf="evaluacionForm.get('appearance')?.get('motivationalHabit')?.value === 'inatinence'"
+      <div *ngIf="evaluacionForm.get('appearance')?.get('motivationalHabit')?.value === 'inatinence'"
         formGroupName="inatinence">
         <h3 class="titulo">Inanitencia</h3>
         <h3 class="titulo">Fundamentación Jurídica</h3>
         <div>
-          <h4 class="titulo-eva">¿Se esgrimen razones jurídicas que no “tienen que ver” con el punto controvertido? *</h4>
+          <h4 class="titulo-eva">¿Se esgrimen razones jurídicas que no “tienen que ver” con el punto controvertido? *
+          </h4>
           <label>
-            <input type="radio" 
-                   [value]="'Si'" 
-                   [checked]="isRadioSelected('existsInatinenceJuridical', 'Si')" 
-                   (change)="setRadioValue('existsInatinenceJuridical', 'Si')" 
-                   formControlName="existsInatinenceJuridical"> Si
-        </label>
-        <label>
-            <input type="radio" 
-                   [value]="'No'" 
-                   [checked]="isRadioSelected('existsInatinenceJuridical', 'No')" 
-                   (change)="setRadioValue('existsInatinenceJuridical', 'No')" 
-                   formControlName="existsInatinenceJuridical"> No
-        </label>
-        
+            <input type="radio" [value]="'Si'" [checked]="isRadioSelected('existsInatinenceJuridical', 'Si')"
+              (change)="setRadioValue('existsInatinenceJuridical', 'Si')" formControlName="existsInatinenceJuridical">
+            Si
+          </label>
+          <label>
+            <input type="radio" [value]="'No'" [checked]="isRadioSelected('existsInatinenceJuridical', 'No')"
+              (change)="setRadioValue('existsInatinenceJuridical', 'No')" formControlName="existsInatinenceJuridical">
+            No
+          </label>
+
         </div>
         <div>
           <app-caja-texto name="reasonsInatinenceJuridical" formControlName="reasonsInatinenceJuridical"
             [disabled]="evaluacionForm.disabled" [titulo]="'¿Por qué? *'">
           </app-caja-texto>
-          <div *ngIf="!isDocente && getRetroalimentacionValue('appearance.inatinence.inatinenceJuridical_retroalimentacion')">
+          <div
+            *ngIf="!isDocente && getRetroalimentacionValue('appearance.inatinence.inatinenceJuridical_retroalimentacion')">
             <button type="button" (click)="toggleRetroalimentacion('sentenceSubject')" class="bttn-toggle">
               {{ mostrarRetroalimentacion['sentenceSubject'] ? 'Ocultar' : 'Ver' }} retroalimentación
             </button>
@@ -746,27 +719,23 @@
 
         <h3 class="titulo">Fundamentación fáctica</h3>
         <div>
-          <h4 class="titulo-eva">¿Se esgrimen razones fácticas que no “tienen que ver” con el punto controvertido? *</h4>
+          <h4 class="titulo-eva">¿Se esgrimen razones fácticas que no “tienen que ver” con el punto controvertido? *
+          </h4>
           <label>
-            <input type="radio" 
-                   [value]="'Si'" 
-                   [checked]="isRadioSelected('existsInatinenceFactual', 'Si')" 
-                   (change)="setRadioValue('existsInatinenceFactual', 'Si')" 
-                   formControlName="existsInatinenceFactual"> Si
-        </label>
-        <label>
-            <input type="radio" 
-                   [value]="'No'" 
-                   [checked]="isRadioSelected('existsInatinenceFactual', 'No')" 
-                   (change)="setRadioValue('existsInatinenceFactual', 'No')" 
-                   formControlName="existsInatinenceFactual"> No
-        </label>
-                </div>
+            <input type="radio" [value]="'Si'" [checked]="isRadioSelected('existsInatinenceFactual', 'Si')"
+              (change)="setRadioValue('existsInatinenceFactual', 'Si')" formControlName="existsInatinenceFactual"> Si
+          </label>
+          <label>
+            <input type="radio" [value]="'No'" [checked]="isRadioSelected('existsInatinenceFactual', 'No')"
+              (change)="setRadioValue('existsInatinenceFactual', 'No')" formControlName="existsInatinenceFactual"> No
+          </label>
+        </div>
         <div>
           <app-caja-texto name="reasonsInatinenceFactual" formControlName="reasonsInatinenceFactual"
             [disabled]="evaluacionForm.disabled" [titulo]="'¿Por qué? *'">
           </app-caja-texto>
-          <div *ngIf="!isDocente && getRetroalimentacionValue('appearance.inatinence.inatinenceFactual_retroalimentacion')">
+          <div
+            *ngIf="!isDocente && getRetroalimentacionValue('appearance.inatinence.inatinenceFactual_retroalimentacion')">
             <button type="button" (click)="toggleRetroalimentacion('sentenceSubject')" class="bttn-toggle">
               {{ mostrarRetroalimentacion['sentenceSubject'] ? 'Ocultar' : 'Ver' }} retroalimentación
             </button>
@@ -811,7 +780,7 @@
       </div>
 
       <!-- FORMULARIO DE INCOMPRENSIBILIDAD -->
-       <div *ngIf="evaluacionForm.get('appearance')?.get('motivationalHabit')?.value === 'incomprehensibility'"
+      <div *ngIf="evaluacionForm.get('appearance')?.get('motivationalHabit')?.value === 'incomprehensibility'"
         formGroupName="incomprehensibility">
         <h3 class="titulo">Incomprensibilidad</h3>
         <h3 class="titulo">Fundamentación Jurídica</h3>
@@ -829,13 +798,16 @@
           <app-caja-texto name="reasonsIncomprehensibilityJuridical" [disabled]="evaluacionForm.disabled"
             formControlName="reasonsIncomprehensibilityJuridical" [titulo]="'¿Por qué? *'">
           </app-caja-texto>
-          <div *ngIf="!isDocente && getRetroalimentacionValue('appearance.incomprehensibility.incomprehensibilityJuridical_retroalimentacion')">
+          <div
+            *ngIf="!isDocente && getRetroalimentacionValue('appearance.incomprehensibility.incomprehensibilityJuridical_retroalimentacion')">
             <button type="button" (click)="toggleRetroalimentacion('sentenceSubject')" class="bttn-toggle">
               {{ mostrarRetroalimentacion['sentenceSubject'] ? 'Ocultar' : 'Ver' }} retroalimentación
             </button>
             <div *ngIf="mostrarRetroalimentacion['sentenceSubject']" class="retroalimentacion-contenido">
               <div class="retroalimentacion-texto">
-                {{ getRetroalimentacionValue('appearance.incomprehensibility.incomprehensibilityJuridical_retroalimentacion') }}
+                {{
+                getRetroalimentacionValue('appearance.incomprehensibility.incomprehensibilityJuridical_retroalimentacion')
+                }}
               </div>
             </div>
           </div>
@@ -873,33 +845,32 @@
         <div>
           <h4 class="titulo-eva">¿Existen fragmentos de la sentencia que no son razonablemente inteligibles
             para un profesional del derecho ciudadano? *</h4>
-            <label>
-              <input type="radio" 
-                     [value]="'Si'" 
-                     [checked]="isRadioSelected('existsIncomprehensibilityFactual', 'Si')" 
-                     (change)="setRadioValue('existsIncomprehensibilityFactual', 'Si')" 
-                     formControlName="existsIncomprehensibilityFactual"> Si
+          <label>
+            <input type="radio" [value]="'Si'" [checked]="isRadioSelected('existsIncomprehensibilityFactual', 'Si')"
+              (change)="setRadioValue('existsIncomprehensibilityFactual', 'Si')"
+              formControlName="existsIncomprehensibilityFactual"> Si
           </label>
           <label>
-              <input type="radio" 
-                     [value]="'No'" 
-                     [checked]="isRadioSelected('existsIncomprehensibilityFactual', 'No')" 
-                     (change)="setRadioValue('existsIncomprehensibilityFactual', 'No')" 
-                     formControlName="existsIncomprehensibilityFactual"> No
+            <input type="radio" [value]="'No'" [checked]="isRadioSelected('existsIncomprehensibilityFactual', 'No')"
+              (change)="setRadioValue('existsIncomprehensibilityFactual', 'No')"
+              formControlName="existsIncomprehensibilityFactual"> No
           </label>
-          
+
         </div>
         <div>
           <app-caja-texto name="reasonsIncomprehensibilityFactual" formControlName="reasonsIncomprehensibilityFactual"
             [disabled]="evaluacionForm.disabled" [titulo]="'¿Por qué? *'">
           </app-caja-texto>
-          <div *ngIf="!isDocente && getRetroalimentacionValue('appearance.incomprehensibility.incomprehensibilityFactual_retroalimentacion')">
+          <div
+            *ngIf="!isDocente && getRetroalimentacionValue('appearance.incomprehensibility.incomprehensibilityFactual_retroalimentacion')">
             <button type="button" (click)="toggleRetroalimentacion('sentenceSubject')" class="bttn-toggle">
               {{ mostrarRetroalimentacion['sentenceSubject'] ? 'Ocultar' : 'Ver' }} retroalimentación
             </button>
             <div *ngIf="mostrarRetroalimentacion['sentenceSubject']" class="retroalimentacion-contenido">
               <div class="retroalimentacion-texto">
-                {{ getRetroalimentacionValue('appearance.incomprehensibility.incomprehensibilityFactual_retroalimentacion') }}
+                {{
+                getRetroalimentacionValue('appearance.incomprehensibility.incomprehensibilityFactual_retroalimentacion')
+                }}
               </div>
             </div>
           </div>
@@ -943,26 +914,25 @@
         <div>
           <h4 class="titulo-eva">¿Existe incongruencia normativa frente a las partes? *</h4>
           <label>
-            <input type="radio" 
-                   [value]="'Si'" 
-                   [checked]="isRadioSelected('existsIncongruityNormativeParticipants', 'Si')" 
-                   (change)="setRadioValue('existsIncongruityNormativeParticipants', 'Si')" 
-                   formControlName="existsIncongruityNormativeParticipants"> Si
-        </label>
-        <label>
-            <input type="radio" 
-                   [value]="'No'" 
-                   [checked]="isRadioSelected('existsIncongruityNormativeParticipants', 'No')" 
-                   (change)="setRadioValue('existsIncongruityNormativeParticipants', 'No')" 
-                   formControlName="existsIncongruityNormativeParticipants"> No
-        </label>
-        
+            <input type="radio" [value]="'Si'"
+              [checked]="isRadioSelected('existsIncongruityNormativeParticipants', 'Si')"
+              (change)="setRadioValue('existsIncongruityNormativeParticipants', 'Si')"
+              formControlName="existsIncongruityNormativeParticipants"> Si
+          </label>
+          <label>
+            <input type="radio" [value]="'No'"
+              [checked]="isRadioSelected('existsIncongruityNormativeParticipants', 'No')"
+              (change)="setRadioValue('existsIncongruityNormativeParticipants', 'No')"
+              formControlName="existsIncongruityNormativeParticipants"> No
+          </label>
+
         </div>
         <div>
           <app-caja-texto name="reasonsIncongruityNormativeParticipants" [disabled]="evaluacionForm.disabled"
             formControlName="reasonsIncongruityNormativeParticipants" [titulo]="'¿Por qué? *'">
           </app-caja-texto>
-          <div *ngIf="!isDocente && getRetroalimentacionValue('appearance.incongruity.normativeParticipants_retroalimentacion')">
+          <div
+            *ngIf="!isDocente && getRetroalimentacionValue('appearance.incongruity.normativeParticipants_retroalimentacion')">
             <button type="button" (click)="toggleRetroalimentacion('sentenceSubject')" class="bttn-toggle">
               {{ mostrarRetroalimentacion['sentenceSubject'] ? 'Ocultar' : 'Ver' }} retroalimentación
             </button>
@@ -1004,20 +974,16 @@
         <div>
           <h4 class="titulo-eva">¿Existe incongruencia normativa frente al derecho? *</h4>
           <label>
-            <input type="radio" 
-                   [value]="'Si'" 
-                   [checked]="isRadioSelected('existsIncongruityNormativeLaw', 'Si')" 
-                   (change)="setRadioValue('existsIncongruityNormativeLaw', 'Si')" 
-                   formControlName="existsIncongruityNormativeLaw"> Si
-        </label>
-        <label>
-            <input type="radio" 
-                   [value]="'No'" 
-                   [checked]="isRadioSelected('existsIncongruityNormativeLaw', 'No')" 
-                   (change)="setRadioValue('existsIncongruityNormativeLaw', 'No')" 
-                   formControlName="existsIncongruityNormativeLaw"> No
-        </label>
-        
+            <input type="radio" [value]="'Si'" [checked]="isRadioSelected('existsIncongruityNormativeLaw', 'Si')"
+              (change)="setRadioValue('existsIncongruityNormativeLaw', 'Si')"
+              formControlName="existsIncongruityNormativeLaw"> Si
+          </label>
+          <label>
+            <input type="radio" [value]="'No'" [checked]="isRadioSelected('existsIncongruityNormativeLaw', 'No')"
+              (change)="setRadioValue('existsIncongruityNormativeLaw', 'No')"
+              formControlName="existsIncongruityNormativeLaw"> No
+          </label>
+
         </div>
         <div>
           <app-caja-texto name="reasonsIncongruityNormativeLaw" formControlName="reasonsIncongruityNormativeLaw"
@@ -1066,26 +1032,23 @@
         <div>
           <h4 class="titulo-eva">¿Existe incongruencia fáctica frente a las partes? *</h4>
           <label>
-            <input type="radio" 
-                   [value]="'Si'" 
-                   [checked]="isRadioSelected('existsIncongruityFactualParticipants', 'Si')" 
-                   (change)="setRadioValue('existsIncongruityFactualParticipants', 'Si')" 
-                   formControlName="existsIncongruityFactualParticipants"> Si
-        </label>
-        <label>
-            <input type="radio" 
-                   [value]="'No'" 
-                   [checked]="isRadioSelected('existsIncongruityFactualParticipants', 'No')" 
-                   (change)="setRadioValue('existsIncongruityFactualParticipants', 'No')" 
-                   formControlName="existsIncongruityFactualParticipants"> No
-        </label>
-        
+            <input type="radio" [value]="'Si'" [checked]="isRadioSelected('existsIncongruityFactualParticipants', 'Si')"
+              (change)="setRadioValue('existsIncongruityFactualParticipants', 'Si')"
+              formControlName="existsIncongruityFactualParticipants"> Si
+          </label>
+          <label>
+            <input type="radio" [value]="'No'" [checked]="isRadioSelected('existsIncongruityFactualParticipants', 'No')"
+              (change)="setRadioValue('existsIncongruityFactualParticipants', 'No')"
+              formControlName="existsIncongruityFactualParticipants"> No
+          </label>
+
         </div>
         <div>
           <app-caja-texto name="reasonsIncongruityFactualParticipants" [disabled]="evaluacionForm.disabled"
             formControlName="reasonsIncongruityFactualParticipants" [titulo]="'¿Por qué? *'">
           </app-caja-texto>
-          <div *ngIf="!isDocente && getRetroalimentacionValue('appearance.incongruity.factualParticipants_retroalimentacion')">
+          <div
+            *ngIf="!isDocente && getRetroalimentacionValue('appearance.incongruity.factualParticipants_retroalimentacion')">
             <button type="button" (click)="toggleRetroalimentacion('sentenceSubject')" class="bttn-toggle">
               {{ mostrarRetroalimentacion['sentenceSubject'] ? 'Ocultar' : 'Ver' }} retroalimentación
             </button>
@@ -1127,20 +1090,16 @@
         <div>
           <h4 class="titulo-eva ">¿Existe incongruencia fáctica frente al derecho? *</h4>
           <label>
-            <input type="radio" 
-                   [value]="'Si'" 
-                   [checked]="isRadioSelected('existsIncongruityFactualLaw', 'Si')" 
-                   (change)="setRadioValue('existsIncongruityFactualLaw', 'Si')" 
-                   formControlName="existsIncongruityFactualLaw"> Si
-        </label>
-        <label>
-            <input type="radio" 
-                   [value]="'No'" 
-                   [checked]="isRadioSelected('existsIncongruityFactualLaw', 'No')" 
-                   (change)="setRadioValue('existsIncongruityFactualLaw', 'No')" 
-                   formControlName="existsIncongruityFactualLaw"> No
-        </label>
-        
+            <input type="radio" [value]="'Si'" [checked]="isRadioSelected('existsIncongruityFactualLaw', 'Si')"
+              (change)="setRadioValue('existsIncongruityFactualLaw', 'Si')"
+              formControlName="existsIncongruityFactualLaw"> Si
+          </label>
+          <label>
+            <input type="radio" [value]="'No'" [checked]="isRadioSelected('existsIncongruityFactualLaw', 'No')"
+              (change)="setRadioValue('existsIncongruityFactualLaw', 'No')"
+              formControlName="existsIncongruityFactualLaw"> No
+          </label>
+
         </div>
         <div>
           <app-caja-texto name="reasonsIncongruityFactualLaw" formControlName="reasonsIncongruityFactualLaw"
@@ -1186,85 +1145,78 @@
         </div>
       </div>
     </div>
-    
+
     <hr>
-    
-<div *ngIf="evaluacionForm.get('motivationType')?.value" class="final-motivation-section">
-  <h2 class="titulo">Evaluación Final</h2>
-  
-  <!-- Mostrar mensaje si las secciones no están completas -->
-  <div *ngIf="!areAllSectionsComplete()" class="incomplete-sections-warning">
-    <div class="alert alert-warning">
-      <strong>⚠️ {{ getIncompleteSectionsMessage() }}</strong>
-    </div>
-  </div>
-  
-  <!-- Campos de evaluación final - deshabilitados si las secciones no están completas -->
-  <fieldset [disabled]="!areAllSectionsComplete()">
-    <div>
-      <h3 class="titulo">Señale si la sentencia analizada debe ser anulada por déficit de motivación *</h3>
-      <label>
-        <input type="radio" 
-               [value]="'Si'" 
-               [checked]="isRadioSelected('finalMotivationDeficit', 'Si')" 
-               (change)="setRadioValue('finalMotivationDeficit', 'Si')" 
-               formControlName="finalMotivationDeficit"> Si
-      </label>
-      <label>
-        <input type="radio" 
-               [value]="'No'" 
-               [checked]="isRadioSelected('finalMotivationDeficit', 'No')" 
-               (change)="setRadioValue('finalMotivationDeficit', 'No')" 
-               formControlName="finalMotivationDeficit"> No
-      </label>
-    </div>
-    
-    <div>
-      <app-caja-texto formControlName="finalMotivationReasons" 
-        [disabled]="evaluacionForm.disabled || !areAllSectionsComplete()" 
-        [titulo]="'¿Por qué? *'">
-      </app-caja-texto>
-    </div>
-    
-    <div *ngIf="!isDocente && getRetroalimentacionValue('finalMotivation_retroalimentacion')">
-      <button type="button" (click)="toggleRetroalimentacion('finalMotivation')" class="bttn-toggle">
-        {{ mostrarRetroalimentacion['finalMotivation'] ? 'Ocultar' : 'Ver' }} retroalimentación
-      </button>
-      <div *ngIf="mostrarRetroalimentacion['finalMotivation']" class="retroalimentacion-contenido">
-        <div class="retroalimentacion-texto">
-          {{ getRetroalimentacionValue('finalMotivation_retroalimentacion') }}
+
+    <div *ngIf="evaluacionForm.get('motivationType')?.value" class="final-motivation-section">
+      <h2 class="titulo">Evaluación Final</h2>
+
+      <!-- Mostrar mensaje si las secciones no están completas -->
+      <div *ngIf="!areAllSectionsComplete()" class="incomplete-sections-warning">
+        <div class="alert alert-warning">
+          <strong>⚠️ {{ getIncompleteSectionsMessage() }}</strong>
         </div>
       </div>
-    </div>
-    
-    <button class="rate" *ngIf="isDocente && areAllSectionsComplete()" type="button"
-      (click)="toggleCalificar('finalMotivation')">Calificar *</button>
-    <div *ngIf="calificarState['finalMotivation']">
-      <div class="bttns-rate">
-        <button class="correct-button" type="button"
-          [class.calificacion-correcta]="isButtonSelected('finalMotivation', 'finalMotivation_calificacion', 'Correcto')"
-          (click)="selectButton('finalMotivation', 'finalMotivation_calificacion', 'Correcto')">Correcto</button>
-        <button class="incorrect-button" type="button"
-          [class.calificacion-incorrecta]="isButtonSelected('finalMotivation', 'finalMotivation_calificacion', 'Incorrecto')"
-          (click)="selectButton('finalMotivation', 'finalMotivation_calificacion', 'Incorrecto')">Incorrecto</button>
-      </div>
-      <div>
-        <app-caja-texto formControlName="finalMotivation_retroalimentacion"
-          [titulo]="'Retroalimentación *'"></app-caja-texto>
-      </div>
-    </div>
-    
-    <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
-      <div class="calificacion-display" [ngClass]="{
+
+      <!-- Campos de evaluación final - deshabilitados si las secciones no están completas -->
+      <fieldset [disabled]="!areAllSectionsComplete()">
+        <div>
+          <h3 class="titulo">Señale si la sentencia analizada debe ser anulada por déficit de motivación *</h3>
+          <label>
+            <input type="radio" [value]="'Si'" [checked]="isRadioSelected('finalMotivationDeficit', 'Si')"
+              (change)="setRadioValue('finalMotivationDeficit', 'Si')" formControlName="finalMotivationDeficit"> Si
+          </label>
+          <label>
+            <input type="radio" [value]="'No'" [checked]="isRadioSelected('finalMotivationDeficit', 'No')"
+              (change)="setRadioValue('finalMotivationDeficit', 'No')" formControlName="finalMotivationDeficit"> No
+          </label>
+        </div>
+
+        <div>
+          <app-caja-texto formControlName="finalMotivationReasons"
+            [disabled]="evaluacionForm.disabled || !areAllSectionsComplete()" [titulo]="'¿Por qué? *'">
+          </app-caja-texto>
+        </div>
+
+        <div *ngIf="!isDocente && getRetroalimentacionValue('finalMotivation_retroalimentacion')">
+          <button type="button" (click)="toggleRetroalimentacion('finalMotivation')" class="bttn-toggle">
+            {{ mostrarRetroalimentacion['finalMotivation'] ? 'Ocultar' : 'Ver' }} retroalimentación
+          </button>
+          <div *ngIf="mostrarRetroalimentacion['finalMotivation']" class="retroalimentacion-contenido">
+            <div class="retroalimentacion-texto">
+              {{ getRetroalimentacionValue('finalMotivation_retroalimentacion') }}
+            </div>
+          </div>
+        </div>
+
+        <button class="rate" *ngIf="isDocente && areAllSectionsComplete()" type="button"
+          (click)="toggleCalificar('finalMotivation')">Calificar *</button>
+        <div *ngIf="calificarState['finalMotivation']">
+          <div class="bttns-rate">
+            <button class="correct-button" type="button"
+              [class.calificacion-correcta]="isButtonSelected('finalMotivation', 'finalMotivation_calificacion', 'Correcto')"
+              (click)="selectButton('finalMotivation', 'finalMotivation_calificacion', 'Correcto')">Correcto</button>
+            <button class="incorrect-button" type="button"
+              [class.calificacion-incorrecta]="isButtonSelected('finalMotivation', 'finalMotivation_calificacion', 'Incorrecto')"
+              (click)="selectButton('finalMotivation', 'finalMotivation_calificacion', 'Incorrecto')">Incorrecto</button>
+          </div>
+          <div>
+            <app-caja-texto formControlName="finalMotivation_retroalimentacion"
+              [titulo]="'Retroalimentación *'"></app-caja-texto>
+          </div>
+        </div>
+
+        <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
+          <div class="calificacion-display" [ngClass]="{
         'calificacion-correcta': getCalificacionValue('finalMotivation_calificacion') === 'Correcto',
         'calificacion-incorrecta': getCalificacionValue('finalMotivation_calificacion') === 'Incorrecto',
         'calificacion-no-calificado': getCalificacionValue('finalMotivation_calificacion') === 'No Calificado'
       }">
-        {{ getCalificacionValue('finalMotivation_calificacion') }}
-      </div>
+            {{ getCalificacionValue('finalMotivation_calificacion') }}
+          </div>
+        </div>
+      </fieldset>
     </div>
-  </fieldset>
-</div>
 
     <button class="bttn-stnd-g" type="submit">Guardar</button>
   </form>
@@ -1274,10 +1226,10 @@
 </div>
 
 <div class="bttn">
-  <button class="bttn-stnd" (click)="redirectToAnalisis2()">Análisis</button>
+  <button class="bttn-stnd" (click)="redirectToAnalisis2()">Anterior</button>
   <button class="custom-button" type="button" *ngIf="cargando">
     <div class="spinner"></div>
     <span class="button-text">Cargando...</span>
   </button>
-  <button class="bttn-stnd"  (click)="redirectToEvaluacion2($event)">Siguiente</button>
+  <button class="bttn-stnd" (click)="redirectToEvaluacion2($event)">Siguiente</button>
 </div>

@@ -4,12 +4,7 @@ import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
 import { Router, ActivatedRoute, RouterLink } from '@angular/router';
 import { Observable, of } from 'rxjs';
-
-interface User {
-  uid: string;
-  role: string;
-  [key: string]: any;
-}
+import { AuthService, UserData } from '../../services/auth.service';
 
 interface Section {
   title: string;
@@ -59,7 +54,11 @@ export class Evaluacion2Component implements OnInit {
   docenteSaved = false;
   selectedButton: string | null = null;
   isDocente = false;
-  currentUser: Observable<User | null | undefined> = of(null);
+
+  // Usamos UserData importado y añadimos currentUserData
+  currentUser: Observable<UserData | null | undefined> = of(null);
+  currentUserData: UserData | null = null;
+
   calificarState: { [key: string]: boolean } = {};
   calificaciones: { [key: string]: string } = {};
   buttonStates: { [key: string]: string } = {};
@@ -101,19 +100,18 @@ export class Evaluacion2Component implements OnInit {
   }
 
   finalizarEvaluacion() {
-    if (this.docenteSaved) {
-      this.router.navigate(['/principal']);
-    }
+    // Redirección simple si se decide no bloquear
+    this.router.navigate(['/principal']);
   }
 
   guardarYFinalizar(event: Event) {
     event.preventDefault();
-    
+
     // Quitar validaciones estrictas temporalmente
     // Mostrar loading y guardar
     this.cargando = true;
     this.submitForm();
-    
+
     // Mostrar mensaje de éxito después de guardar
     setTimeout(() => {
       this.mostrarMensajeExitoFuncion('Se ha guardado la sección');
@@ -178,7 +176,8 @@ export class Evaluacion2Component implements OnInit {
         // console.log('saved:', this.evaluacion2Form.get('saved')?.value);
         // console.log('buttonStates:', this.buttonStates);
         // console.log('Form value:', this.evaluacion2Form.value);
-      }, 2000);
+        this.checkLockStatus(); // Movemos esto aquí para asegurar que se verifique al cargar
+      }, 1000);
     });
   }
 
@@ -187,19 +186,73 @@ export class Evaluacion2Component implements OnInit {
       if (data && data.locked) {
         this.evaluacion2Form.disable();
         this.isFormLocked = true;
+      } else {
+        // Si no está bloqueado en la base, habilitamos el formulario
+        if (this.isFormLocked) {
+          this.evaluacion2Form.enable();
+          this.isFormLocked = false;
+        }
       }
     });
   }
 
-  lockForm() {
+  /**
+   * Bloquea la sentencia permanentemente para finalizar el proceso de revisión.
+   * - Actualiza el flag 'locked' en la colección 'locks'.
+   * - Actualiza el flag 'isLocked' en la sentencia para reflejarlo en el listado.
+   * - Deshabilita el formulario localmente.
+   */
+  bloquearSentencia() {
+    if (!confirm('¿Está seguro de BLOQUEAR esta sentencia? Ya no se podrán hacer cambios y será redirigido al menú principal.')) return;
+
+    this.cargando = true;
     this.firestore.collection('locks').doc(this.numero_proceso).set({ locked: true })
-      .then(() => {
+      .then(async () => {
+        // Actualizar flag en sentencias para que se vea en el listado
+        const sentenciaQuery = await this.firestore.collection('sentencias', ref => ref.where('numero_proceso', '==', this.numero_proceso)).get().toPromise();
+        if (sentenciaQuery && !sentenciaQuery.empty) {
+          await sentenciaQuery.docs[0].ref.update({ isLocked: true });
+        }
+
         this.evaluacion2Form.disable();
         this.isFormLocked = true;
-        // console.log('Formulario bloqueado');
+        this.cargando = false;
+        this.mostrarMensajeExitoFuncion('Sentencia bloqueada correctamente. Redirigiendo...');
+
+        // Redireccionar al principal después de bloquear
+        setTimeout(() => {
+          this.router.navigate(['/principal']);
+        }, 2000);
       })
       .catch(error => {
         // console.error("Error locking form: ", error);
+        this.cargando = false;
+        this.mostrarMensajeError('Error al bloquear la sentencia');
+      });
+  }
+
+  // NUEVA FUNCIÓN: Desbloquear Sentencia
+  desbloquearSentencia() {
+    if (!confirm('¿Desea DESBLOQUEAR la sentencia para editarla nuevamente?')) return;
+
+    this.cargando = true;
+    this.firestore.collection('locks').doc(this.numero_proceso).delete()
+      .then(async () => {
+        // Actualizar flag en sentencias
+        const sentenciaQuery = await this.firestore.collection('sentencias', ref => ref.where('numero_proceso', '==', this.numero_proceso)).get().toPromise();
+        if (sentenciaQuery && !sentenciaQuery.empty) {
+          await sentenciaQuery.docs[0].ref.update({ isLocked: false });
+        }
+
+        this.evaluacion2Form.enable();
+        this.isFormLocked = false;
+        this.cargando = false;
+        this.mostrarMensajeExitoFuncion('Sentencia desbloqueada. Puede editar ahora.');
+      })
+      .catch(error => {
+        console.error("Error unlocking form: ", error);
+        this.cargando = false;
+        this.mostrarMensajeError('Error al desbloquear la sentencia');
       });
   }
 
@@ -214,16 +267,24 @@ export class Evaluacion2Component implements OnInit {
     });
   }
 
+  // LÓGICA USERDATA ACTUALIZADA
   loadUserData() {
     this.afAuth.user.subscribe(user => {
       if (user) {
         this.firestore.collection('users').doc(user.uid).valueChanges().subscribe((userData: any) => {
-          this.isDocente = userData && userData.role === 'docente';
+          // Guardamos el usuario centralizado
+          this.currentUserData = userData as UserData;
+          // Verificamos rol de docente o si es admin (para permisos)
+          this.isDocente = userData && (userData.role === 'docente' || userData.isAdmin === true);
         });
       }
     });
   }
 
+  /**
+   * Guarda la evaluación de motivación correcta.
+   * Si es docente, marca la revisión.
+   */
   submitForm() {
     // Quitar validaciones estrictas temporalmente
     // if (this.evaluacion2Form.valid) {
@@ -242,6 +303,7 @@ export class Evaluacion2Component implements OnInit {
         // console.log('Form submitted and saved:', analisisData);
         this.mostrarMensajeExitoFuncion('Se ha guardado la sección');
         setTimeout(() => {
+          // Recargar solo si no vamos a redirigir, en este caso permitimos seguir
           window.location.reload();
         }, 1000);
       })
@@ -397,14 +459,9 @@ export class Evaluacion2Component implements OnInit {
   saveFormChanges() {
     const formData = this.evaluacion2Form.value;
     formData.saved = true;
-    // console.log('Saving form data:', formData);
     this.firestore.collection('evaluacion2').doc(this.numero_proceso).update(formData)
       .then(() => {
-        // console.log('Cambios guardados correctamente');
         this.evaluacion2Form.patchValue({ saved: true });
-      })
-      .catch(error => {
-        // console.error('Error al guardar los cambios:', error);
       });
   }
 

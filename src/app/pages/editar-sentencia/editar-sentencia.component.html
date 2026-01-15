@@ -12,19 +12,37 @@
 
   <form (ngSubmit)="submitForm()" *ngIf="sentencia">
 
-    <div class="dato-sent" *ngIf="currentUserRole === 'administrador' || currentUserRole === 'docente'">
+    <!-- 1. PREGUNTA DE CONTROL (Visible para admins/docentes) -->
+    <!-- Permite decidir si se mantiene el docente actual o se reasigna a uno nuevo -->
+    <div class="dato-sent" *ngIf="isAdmin || currentUserRole === 'administrador' || currentUserRole === 'docente'">
       <label>¿El docente actual continúa con la sentencia?</label><br>
       <input type="radio" name="continua_docente" [(ngModel)]="continuaDocente" [value]="true"> Sí
       <input type="radio" name="continua_docente" [(ngModel)]="continuaDocente" [value]="false"> No
     </div>
 
-    <div *ngIf="!continuaDocente && (currentUserRole === 'administrador' || currentUserRole === 'docente')">
+    <!-- 2. SELECCIÓN DE NUEVO DOCENTE (Si la respuesta es No) -->
+    <div *ngIf="!continuaDocente && (isAdmin || currentUserRole === 'administrador' || currentUserRole === 'docente')">
+
+      <!-- BUSCADOR PARA NUEVO DOCENTE -->
       <div class="dato-sent">
-        <label for="nuevo_docente">Nuevo docente:</label><br>
-        <select class="docente" id="nuevo_docente" name="nuevo_docente" [(ngModel)]="nuevoDocente"
-          (change)="actualizarCorreoNuevoDocente()">
-          <option *ngFor="let docente of docentesLista" [value]="docente.name">{{ docente.name }}</option>
-        </select>
+        <label for="nuevo_docente_search">Nuevo docente (Buscar):</label><br>
+        <div class="autocomplete-container">
+          <input type="text" id="nuevo_docente_search" name="nuevo_docente_search" class="docente-input"
+            placeholder="Escriba el nombre del nuevo docente..." [(ngModel)]="searchTermNuevo"
+            (input)="filterDocentesNuevo()" (focus)="showDropdownNuevo = true" (blur)="hideDropdownNuevo()"
+            autocomplete="off">
+
+          <ul class="autocomplete-list" *ngIf="showDropdownNuevo && filteredDocentesNuevo.length > 0">
+            <li *ngFor="let docente of filteredDocentesNuevo" (click)="selectDocenteNuevo(docente)">
+              <strong>{{ docente.name }}</strong> <br>
+              <small style="color: #666;">{{ docente.email }}</small>
+            </li>
+          </ul>
+
+          <div class="no-results" *ngIf="showDropdownNuevo && filteredDocentesNuevo.length === 0">
+            No se encontraron docentes.
+          </div>
+        </div>
       </div>
 
       <div class="dato-sent">
@@ -34,6 +52,7 @@
       </div>
     </div>
 
+    <!-- CAMPOS DE LA SENTENCIA -->
     <div class="dato-sent">
       <label class="numero-proceso" for="process">1. Número de Proceso:</label><br>
       <input class="numero-proceso" type="text" id="process" name="process" [(ngModel)]="sentencia.numero_proceso"
@@ -60,12 +79,25 @@
         readonly><br>
     </div>
 
+    <!-- BUSCADOR PARA DOCENTE ACTUAL/PRINCIPAL -->
     <div class="dato-sent">
-      <label class="label-docente" for="teacher">5. Docente:</label><br>
-      <select class="docente" id="teacher" name="teacher" [(ngModel)]="sentencia.nombre_docente"
-        (change)="actualizarCorreoDocente()" required>
-        <option *ngFor="let docente of docentesLista" [value]="docente.name">{{ docente.name }}</option>
-      </select>
+      <label class="label-docente" for="teacher-search">5. Docente (Buscar):</label><br>
+      <div class="autocomplete-container">
+        <input type="text" id="teacher-search" name="teacher-search" class="docente-input"
+          placeholder="Escriba el nombre del docente..." [(ngModel)]="searchTermDocente" (input)="filterDocentes()"
+          (focus)="showDropdown = true" (blur)="hideDropdown()" autocomplete="off" required>
+
+        <ul class="autocomplete-list" *ngIf="showDropdown && filteredDocentes.length > 0">
+          <li *ngFor="let docente of filteredDocentes" (click)="selectDocente(docente)">
+            <strong>{{ docente.name }}</strong> <br>
+            <small style="color: #666;">{{ docente.email }}</small>
+          </li>
+        </ul>
+
+        <div class="no-results" *ngIf="showDropdown && filteredDocentes.length === 0">
+          No se encontraron docentes.
+        </div>
+      </div>
     </div>
 
     <div class="dato-sent">

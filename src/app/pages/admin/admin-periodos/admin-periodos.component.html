@@ -1,0 +1,159 @@
+<app-header></app-header>
+
+<div class="admin-container">
+
+    <div class="page-header">
+        <button class="bttn-back" (click)="volver()">
+            <i class="fa-solid fa-arrow-left"></i> Volver
+        </button>
+        <h2>Panel de Administración</h2>
+    </div>
+
+    <!-- Indicador de carga (Spinner overlay) -->
+    <div *ngIf="isLoading" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Procesando...</p>
+    </div>
+
+    <!-- Notificaciones -->
+    <div *ngIf="alert"
+        [ngClass]="{'success-notification': alertype === 'success', 'error-notification': alertype === 'error'}"
+        class="notification-box">
+        {{ alert }}
+    </div>
+
+    <div class="grid-layout">
+
+        <!-- COLUMNA IZQUIERDA: GESTIÓN DE PERIODOS -->
+        <div class="column-left">
+            <div class="card full-height">
+                <div class="card-header-flex">
+                    <h3>📅 Periodos Académicos</h3>
+                    <button class="bttn-create" (click)="abrirModal()">
+                        <i class="fa-solid fa-plus"></i> Nuevo
+                    </button>
+                </div>
+
+                <div class="table-scroll-container">
+                    <table class="period-table">
+                        <thead>
+                            <tr>
+                                <th>Periodo</th>
+                                <th style="text-align: center;">Estado</th>
+                                <th style="text-align: right;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let p of periodos" [class.row-active]="p.activo">
+                                <td>
+                                    <div class="period-name">{{ p.nombre }}</div>
+                                    <span *ngIf="p.activo" class="badge-active-text">ACTUALMENTE VISIBLE</span>
+                                </td>
+                                <td style="text-align: center;">
+                                    <span class="status-indicator" [class.on]="p.activo"></span>
+                                </td>
+                                <td style="text-align: right;">
+                                    <button *ngIf="!p.activo" class="bttn-small activate" (click)="activarPeriodo(p)">
+                                        Activar
+                                    </button>
+                                    <span *ngIf="p.activo" class="check-icon">
+                                        <i class="fa-solid fa-circle-check"></i>
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr *ngIf="periodos.length === 0">
+                                <td colspan="3" class="empty-state">No hay periodos registrados con el nuevo formato.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: HERRAMIENTAS -->
+        <div class="column-right">
+
+            <!-- Carga de Docentes -->
+            <div class="card">
+                <h3>👥 Carga de Docentes</h3>
+                <p class="info-text">Subir listado para el periodo <strong>ACTIVO</strong> (CSV).</p>
+
+                <div class="status-box" [ngClass]="periodoActivoActual ? 'active' : 'inactive'">
+                    <small>Destino:</small>
+                    <div>{{ periodoActivoActual ? periodoActivoActual.nombre : 'NINGUNO SELECCIONADO' }}</div>
+                </div>
+
+                <label for="csvInputAdmin" class="bttn-upload" [class.disabled]="!periodoActivoActual">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Cargar CSV
+                </label>
+                <input type="file" id="csvInputAdmin" (change)="onFileSelected($event)" accept=".csv"
+                    style="display: none;" [disabled]="!periodoActivoActual">
+
+                <!-- ✅ INDICACIONES DE FORMATO -->
+                <div class="csv-instructions">
+                    <strong>Formato requerido (CSV):</strong>
+                    <p>email, nombres, modalidad</p>
+                    <p>
+                        <small style="color: #666;">(El periodo se asigna automáticamente)</small>
+                </div>
+            </div>
+
+            <!-- Reportes -->
+            <div class="card" style="margin-top: 20px;">
+                <h3>📊 Reportes Históricos</h3>
+                <p class="info-text">Descargar sentencias de un ciclo pasado.</p>
+
+                <div class="form-group">
+                    <select [(ngModel)]="periodoReporteSeleccionado" class="select-full">
+                        <option [ngValue]="null" disabled selected>-- Seleccionar Periodo --</option>
+                        <option *ngFor="let p of periodos" [ngValue]="p">
+                            {{ p.nombre }}
+                        </option>
+                    </select>
+                </div>
+
+                <button class="bttn-report" (click)="descargarReporte()" [disabled]="!periodoReporteSeleccionado"
+                    [class.disabled]="!periodoReporteSeleccionado">
+                    <i class="fa-solid fa-download"></i> Descargar Excel
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!--  MODAL DE CREACIÓN DE PERIODOS -->
+<div class="modal-backdrop" *ngIf="showModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Nuevo Periodo Académico</h3>
+            <button class="close-btn" (click)="cerrarModal()">×</button>
+        </div>
+
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Ciclo:</label>
+                <select [(ngModel)]="cicloSeleccionado" (change)="actualizarPreview()">
+                    <option value="abril - agosto">Abril - Agosto</option>
+                    <option value="octubre - febrero">Octubre - Febrero</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Año de Inicio:</label>
+                <input type="number" [(ngModel)]="anioInput" (input)="actualizarPreview()" placeholder="Ej: 2025">
+            </div>
+
+            <div class="preview-box">
+                <small>Se creará:</small>
+                <div class="preview-text">{{ previewNombre }}</div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button class="bttn-cancel" (click)="cerrarModal()">Cancelar</button>
+            <button class="bttn-save" (click)="crearPeriodo()">Guardar</button>
+        </div>
+    </div>
+</div>

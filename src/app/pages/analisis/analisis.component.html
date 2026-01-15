@@ -1,278 +1,288 @@
 <app-header></app-header>
 
-  <div class="datos-est">
-    <p class="dat"><strong> NÚMERO PROCESO: </strong> {{ numero_proceso }}</p>
-    <p class="dat"><strong> ASUNTO: </strong> {{ asunto }}</p>
-    <p class="dat"><strong> ESTUDIANTE: </strong> {{ estudiante }} </p>
-    <p class="dat"><strong> DOCENTE: </strong> {{ docente }}</p>
-  </div>
+<div class="datos-est">
+  <p class="dat"><strong> NÚMERO PROCESO: </strong> {{ numero_proceso }}</p>
+  <p class="dat"><strong> ASUNTO: </strong> {{ asunto }}</p>
+  <p class="dat"><strong> ESTUDIANTE: </strong> {{ estudiante }} </p>
+  <p class="dat"><strong> DOCENTE: </strong> {{ docente }}</p>
+</div>
 
-  <div class="info-analisis">
-    <h3 class="titulo-analisis">Esquema de las argumentaciones de la sentencia</h3>
-    <p style="font-family: Poppins;"> Todas las preguntas marcadas con un asterisco (*) son obligatorias. </p>
-    <form [formGroup]="analisisForm" (ngSubmit)="submitForm()">
-      <!-- Alerta de bloqueo -->
-      <div *ngIf="analisisForm.disabled" class="locked-message">
-        Esta sentencia está bloqueada y no puede ser editada.
-      </div>
-      <!-- Aqui empieza la pregunta del problema -->
-      <div class="question">
-        <div *ngIf="!isDocente && analisisForm.get('saved')?.value" class="calificaciones">
-          <div class="calificacion-display" [ngClass]="{
+<div class="info-analisis">
+  <h3 class="titulo-analisis">Esquema de las argumentaciones de la sentencia</h3>
+  <p style="font-family: Poppins;"> Todas las preguntas marcadas con un asterisco (*) son obligatorias. </p>
+  <form [formGroup]="analisisForm" (ngSubmit)="submitForm()">
+    <!-- Alerta de bloqueo: Se muestra si la sentencia ha sido finalizada -->
+    <div *ngIf="analisisForm.disabled" class="locked-message">
+      Esta sentencia está bloqueada y no puede ser editada.
+    </div>
+    <!-- Aqui empieza la pregunta del problema -->
+    <div class="question">
+      <div *ngIf="!isDocente && analisisForm.get('saved')?.value" class="calificaciones">
+        <div class="calificacion-display" [ngClass]="{
             'calificacion-correcta': getCalificacionValue('problem_question.calificacion') === 'Correcto',
             'calificacion-incorrecta': getCalificacionValue('problem_question.calificacion') === 'Incorrecto',
             'calificacion-no-calificado': getCalificacionValue('problem_question.calificacion') === 'No Calificado'
           }">
-            {{ getCalificacionValue('problem_question.calificacion') }}
-          </div>
-        </div>
-        <!-- Secciones para responder las preguntas del problema -->
-        <div class="pregunta-container">
-          <h5 class="pregunta">Pregunta del problema *</h5>
-          <div [formGroupName]="'problem_question'">
-            <app-caja-texto formControlName="pregunta"></app-caja-texto>
-          </div>
+          {{ getCalificacionValue('problem_question.calificacion') }}
         </div>
       </div>
-      <!-- Opciones de califacion del docente -->
-      <div *ngIf="isDocente">
-        <button class="rate" *ngIf="isDocente" type="button"
-        (click)="toggleCalificar2('problem_question')">
+      <!-- Secciones para responder las preguntas del problema -->
+      <div class="pregunta-container">
+        <h5 class="pregunta">Pregunta del problema *</h5>
+        <div [formGroupName]="'problem_question'">
+          <app-caja-texto formControlName="pregunta"></app-caja-texto>
+        </div>
+      </div>
+    </div>
+    <!-- Opciones de calificacion del docente -->
+    <!-- Solo visible para usuarios con rol Docente o Admin -->
+    <div *ngIf="isDocente">
+      <button class="rate" *ngIf="isDocente" type="button" (click)="toggleCalificar2('problem_question')">
         Calificar *
       </button>
-        <div *ngIf="calificarState['problem_question']">
-          <div class="bttns-rate">
-            <button class="correct-button" 
-              [class.calificacion-correcta]="isCalificacionCorrecta2('problem_question')"
-              type="button" 
-              (click)="setCalificacion2('problem_question', 'Correcto')">
-              Correcto
-            </button>
-            <button class="incorrect-button"
-              [class.calificacion-incorrecta]="!isCalificacionCorrecta2('problem_question')"
-              type="button"
-              (click)="setCalificacion2('problem_question', 'Incorrecto')">
-              Incorrecto
-            </button>
-          </div>
-          <div>
-            <h5 class="pregunta">Retroalimentación *</h5>
-            <div [formGroupName]="'problem_question'">
-              <app-caja-texto 
-                formControlName="retroalimentacion"
-                (valueChange)="setRetroalimentacion('problem_question', $event)">
-              </app-caja-texto>
-            </div>
+      <div *ngIf="calificarState['problem_question']">
+        <div class="bttns-rate">
+          <button class="correct-button" [class.calificacion-correcta]="isCalificacionCorrecta2('problem_question')"
+            type="button" (click)="setCalificacion2('problem_question', 'Correcto')">
+            Correcto
+          </button>
+          <button class="incorrect-button"
+            [class.calificacion-incorrecta]="!isCalificacionCorrecta2('problem_question')" type="button"
+            (click)="setCalificacion2('problem_question', 'Incorrecto')">
+            Incorrecto
+          </button>
+        </div>
+        <div>
+          <h5 class="pregunta">Retroalimentación *</h5>
+          <div [formGroupName]="'problem_question'">
+            <app-caja-texto formControlName="retroalimentacion"
+              (valueChange)="setRetroalimentacion('problem_question', $event)">
+            </app-caja-texto>
           </div>
         </div>
       </div>
-      <div *ngIf="hasRetroalimentacion('problem_question.retroalimentacion') && !isDocente" class="retroalimentacion-section">
-        <button type="button" (click)="toggleRetroalimentacionPregunta($event)" class="bttn-toggle">
-          {{ mostrarRetroalimentacionPregunta ? 'Ocultar' : 'Ver' }} retroalimentación
-        </button>
-        <div *ngIf="mostrarRetroalimentacionPregunta" class="retroalimentacion-contenido">
-          <div class="retroalimentacion-texto">
-            {{ getRetroalimentacionValue('problem_question.retroalimentacion') }}
-          </div>
+    </div>
+    <div *ngIf="hasRetroalimentacion('problem_question.retroalimentacion') && !isDocente"
+      class="retroalimentacion-section">
+      <button type="button" (click)="toggleRetroalimentacionPregunta($event)" class="bttn-toggle">
+        {{ mostrarRetroalimentacionPregunta ? 'Ocultar' : 'Ver' }} retroalimentación
+      </button>
+      <div *ngIf="mostrarRetroalimentacionPregunta" class="retroalimentacion-contenido">
+        <div class="retroalimentacion-texto">
+          {{ getRetroalimentacionValue('problem_question.retroalimentacion') }}
         </div>
       </div>
-      
-      <hr>
-      <!-- Aqui empieza el formulario de normativas -->
-      <div formArrayName="normativas">
-        <div *ngFor="let normativa of normativas.controls; let i=index" [formGroupName]="i">
-          <div class="pa">
-            <div *ngIf="!isDocente && analisisForm.get('saved')?.value" class="calificaciones">
-              <div class="calificacion-display" [ngClass]="{
+    </div>
+
+    <hr>
+    <!-- Aqui empieza el formulario de normativas -->
+    <div formArrayName="normativas">
+      <div *ngFor="let normativa of normativas.controls; let i=index" [formGroupName]="i">
+        <div class="pa">
+          <div *ngIf="!isDocente && analisisForm.get('saved')?.value" class="calificaciones">
+            <div class="calificacion-display" [ngClass]="{
                 'calificacion-correcta': getCalificacionValue('normativas.' + i + '.calificacion') === 'Correcto',
                 'calificacion-incorrecta': getCalificacionValue('normativas.' + i + '.calificacion') === 'Incorrecto',
                 'calificacion-no-calificado': getCalificacionValue('normativas.' + i + '.calificacion') === 'No Calificado'
               }">
-                {{ getCalificacionValue('normativas.' + i + '.calificacion') }}
+              {{ getCalificacionValue('normativas.' + i + '.calificacion') }}
+            </div>
+          </div>
+          <!-- Seccion para responder las preguntas normativas -->
+          <div class="pregunta-container">
+            <h5 class="pregunta">Cuestión normativa *</h5>
+            <app-caja-texto formControlName="pregunta"></app-caja-texto>
+          </div>
+          <div class="razones-container">
+            <h5 class="pregunta">Respuesta o razones *</h5>
+            <app-caja-texto formControlName="respuesta"></app-caja-texto>
+          </div>
+
+          <div class="retro">
+            <div *ngIf="!isDocente && normativa.get('retroalimentacion')?.value">
+              <button type="button" (click)="toggleRetroalimentacion($event, i)" class="bttn-toggle">
+                {{ mostrarRetroalimentacion[i] ? 'Ocultar' : 'Ver' }} retroalimentación
+              </button>
+              <div *ngIf="mostrarRetroalimentacion[i]" class="retroalimentacion-contenido">
+                {{ normativa.get('retroalimentacion')?.value }}
               </div>
             </div>
-            <!-- Seccion para responder las preguntas normativas -->
-            <div class="pregunta-container">
-              <h5 class="pregunta">Cuestión normativa *</h5>
-              <app-caja-texto formControlName="pregunta"></app-caja-texto>
-            </div>
-            <div class="razones-container">
-              <h5 class="pregunta">Respuesta o razones *</h5>
-              <app-caja-texto formControlName="respuesta"></app-caja-texto>
-            </div>
+          </div>
 
-            <div class="retro">
-              <div *ngIf="!isDocente && normativa.get('retroalimentacion')?.value">
-                <button type="button" (click)="toggleRetroalimentacion($event, i)" class="bttn-toggle">
-                  {{ mostrarRetroalimentacion[i] ? 'Ocultar' : 'Ver' }} retroalimentación
+          <!-- BOTÓN DE ELIMINAR (DENTRO DEL LOOP + PROTECCIÓN BLOQUEO) -->
+          <div class="button-container">
+            <button class="bttn-stnd-delete" [disabled]="analisisForm.disabled" type="button"
+              (click)="removeNormativa(i)">Eliminar Cuestión
+              Normativa</button>
+          </div>
+
+          <div class="">
+            <button class="rate" *ngIf="isDocente" type="button" (click)="toggleCalificar(i, 'normativa')">Calificar
+              *</button>
+            <div *ngIf="normativa.get('showCalificar')?.value">
+              <div class="bttns-rate">
+                <button class="correct-button" [class.calificacion-correcta]="isCalificacionCorrecta('normativa', i)"
+                  type="button" (click)="setCalificacion(i, 'normativa', 'Correcto')">
+                  Correcto
                 </button>
-                <div *ngIf="mostrarRetroalimentacion[i]" class="retroalimentacion-contenido">
-                  {{ normativa.get('retroalimentacion')?.value }}
-                </div>
+                <button class="incorrect-button"
+                  [class.calificacion-incorrecta]="isCalificacionIncorrecta('normativa', i)" type="button"
+                  (click)="setCalificacion(i, 'normativa', 'Incorrecto')">
+                  Incorrecto
+                </button>
               </div>
-            </div>
-            <div class="button-container">
-              <button class="bttn-stnd-delete" type="button" (click)="removeNormativa(i)">Eliminar Cuestión
-                Normativa</button>
-              <button class="bttn-stnd" type="button" (click)="addNormativa()">Agregar Cuestión Normativa</button>
-            </div>
-
-            <div class="">
-              <button class="rate" *ngIf="isDocente" type="button"
-                (click)="toggleCalificar(i, 'normativa')">Calificar *</button>
-              <div *ngIf="normativa.get('showCalificar')?.value">
-                <div class="bttns-rate">
-                  <button class="correct-button" 
-                    [class.calificacion-correcta]="isCalificacionCorrecta('normativa', i)"
-                    type="button" 
-                    (click)="setCalificacion(i, 'normativa', 'Correcto')">
-                    Correcto
-                  </button>
-                  <button class="incorrect-button"
-                    [class.calificacion-incorrecta]="isCalificacionIncorrecta('normativa', i)" 
-                    type="button"
-                    (click)="setCalificacion(i, 'normativa', 'Incorrecto')">
-                    Incorrecto
-                  </button>
-                </div>
-                <label class="label-for-text" for="retroalimentacion-{{i}}">Retroalimentación *</label>
-                <app-caja-texto id="retroalimentacion-{{i}}" formControlName="retroalimentacion"></app-caja-texto>
-              </div>
+              <label class="label-for-text" for="retroalimentacion-{{i}}">Retroalimentación *</label>
+              <app-caja-texto id="retroalimentacion-{{i}}" formControlName="retroalimentacion"></app-caja-texto>
             </div>
           </div>
         </div>
       </div>
-      <!-- Aqui empieza el formulario de faticas -->
-      <div formArrayName="facticas">
-        <div *ngFor="let factica of facticas.controls; let i=index" [formGroupName]="i">
-          <div *ngIf="!isDocente && analisisForm.get('saved')?.value" class="calificaciones">
-            <div class="calificacion-display" [ngClass]="{
+    </div>
+
+    <!-- BOTÓN DE AGREGAR NORMATIVA (FUERA DEL LOOP + PROTECCIÓN BLOQUEO) -->
+    <div class="add-btn-container" style="margin-top: 10px; margin-bottom: 20px;">
+      <button class="bttn-stnd" [disabled]="analisisForm.disabled" type="button" (click)="addNormativa()">+ Agregar
+        Cuestión Normativa</button>
+    </div>
+
+    <hr class="line">
+
+    <!-- Aqui empieza el formulario de faticas -->
+    <div formArrayName="facticas">
+      <div *ngFor="let factica of facticas.controls; let i=index" [formGroupName]="i">
+        <div *ngIf="!isDocente && analisisForm.get('saved')?.value" class="calificaciones">
+          <div class="calificacion-display" [ngClass]="{
               'calificacion-correcta': getCalificacionValue('facticas.' + i + '.calificacion') === 'Correcto',
               'calificacion-incorrecta': getCalificacionValue('facticas.' + i + '.calificacion') === 'Incorrecto',
               'calificacion-no-calificado': getCalificacionValue('facticas.' + i + '.calificacion') === 'No Calificado'
             }">
-              {{ getCalificacionValue('facticas.' + i + '.calificacion') }}
+            {{ getCalificacionValue('facticas.' + i + '.calificacion') }}
+          </div>
+        </div>
+        <div class="pa">
+          <div class="pregunta-container">
+            <h5 class="pregunta">Cuestión fáctica *</h5>
+            <app-caja-texto formControlName="pregunta"></app-caja-texto>
+          </div>
+
+          <div class="razones-container">
+            <h5 class="pregunta">Respuesta o razones *</h5>
+            <app-caja-texto formControlName="respuesta"></app-caja-texto>
+          </div>
+
+          <div class="retro">
+            <div *ngIf="!isDocente && factica.get('retroalimentacion')?.value">
+              <button type="button" (click)="toggleRetroalimentacion($event, i)" class="bttn-toggle">
+                {{ mostrarRetroalimentacion[i] ? 'Ocultar' : 'Ver' }} retroalimentación
+              </button>
+              <div *ngIf="mostrarRetroalimentacion[i]" class="retroalimentacion-contenido">
+                {{ factica.get('retroalimentacion')?.value }}
+              </div>
             </div>
           </div>
-          <div class="pa">
-            <div class="pregunta-container">
-              <h5 class="pregunta">Cuestión fáctica *</h5>
-              <app-caja-texto formControlName="pregunta"></app-caja-texto>
-            </div>
 
-            <div class="razones-container">
-              <h5 class="pregunta">Respuesta o razones *</h5>
-              <app-caja-texto formControlName="respuesta"></app-caja-texto>
-            </div>
+          <!-- BOTÓN DE ELIMINAR (DENTRO DEL LOOP + PROTECCIÓN BLOQUEO) -->
+          <div class="button-container">
+            <button class="bttn-stnd-delete" [disabled]="analisisForm.disabled" type="button"
+              (click)="removeFactica(i)">Eliminar Cuestión
+              Fáctica</button>
+          </div>
 
-            <div class="retro">
-              <div *ngIf="!isDocente && factica.get('retroalimentacion')?.value">
-                <button type="button" (click)="toggleRetroalimentacion($event, i)" class="bttn-toggle">
-                  {{ mostrarRetroalimentacion[i] ? 'Ocultar' : 'Ver' }} retroalimentación
+          <div>
+            <button class="rate" *ngIf="isDocente" type="button" (click)="toggleCalificar(i, 'factica')">Calificar
+              *</button>
+            <div *ngIf="factica.get('showCalificar')?.value">
+              <div class="bttns-rate">
+                <button class="correct-button" [class.calificacion-correcta]="isCalificacionCorrecta('factica', i)"
+                  type="button" (click)="setCalificacion(i, 'factica', 'Correcto')">
+                  Correcto
                 </button>
-                <div *ngIf="mostrarRetroalimentacion[i]" class="retroalimentacion-contenido">
-                  {{ factica.get('retroalimentacion')?.value }}
-                </div>
+                <button class="incorrect-button"
+                  [class.calificacion-incorrecta]="isCalificacionIncorrecta('factica', i)" type="button"
+                  (click)="setCalificacion(i, 'factica', 'Incorrecto')">
+                  Incorrecto
+                </button>
               </div>
-            </div>
-
-            <div class="button-container">
-              <button class="bttn-stnd-delete" type="button" (click)="removeFactica(i)">Eliminar Cuestión
-                Fáctica</button>
-              <button class="bttn-stnd" type="button" (click)="addFactica()">Agregar Cuestión Fáctica</button>
-            </div>
-
-            <div>
-              <button class="rate" *ngIf="isDocente" type="button"
-                (click)="toggleCalificar(i, 'factica')">Calificar *</button>
-              <div *ngIf="factica.get('showCalificar')?.value">
-                <div class="bttns-rate">
-                  <button class="correct-button" [class.calificacion-correcta]="isCalificacionCorrecta('factica', i)"
-                    type="button" (click)="setCalificacion(i, 'factica', 'Correcto')">
-                    Correcto
-                  </button>
-                  <button class="incorrect-button" [class.calificacion-incorrecta]="isCalificacionIncorrecta('factica', i)"
-                    type="button" (click)="setCalificacion(i, 'factica', 'Incorrecto')">
-                    Incorrecto
-                  </button>
-                </div>
-                <label class="label-for-text" for="retroalimentacion-{{i}}">Retroalimentación *</label>
-                <app-caja-texto id="retroalimentacion-{{i}}" formControlName="retroalimentacion"></app-caja-texto>
-              </div>
+              <label class="label-for-text" for="retroalimentacion-{{i}}">Retroalimentación *</label>
+              <app-caja-texto id="retroalimentacion-{{i}}" formControlName="retroalimentacion"></app-caja-texto>
             </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Aqui empieza la decision final del problema -->
-      <div class="problem_decision">
-        <div *ngIf="!isDocente && analisisForm.get('saved')?.value" class="calificaciones">
-          <div class="calificacion-display" [ngClass]="{
+    <!-- BOTÓN DE AGREGAR FÁCTICA (FUERA DEL LOOP + PROTECCIÓN BLOQUEO) -->
+    <div class="add-btn-container" style="margin-top: 10px; margin-bottom: 20px;">
+      <button class="bttn-stnd" [disabled]="analisisForm.disabled" type="button" (click)="addFactica()">+ Agregar
+        Cuestión Fáctica</button>
+    </div>
+
+    <!-- Aqui empieza la decision final del problema -->
+    <div class="problem_decision">
+      <div *ngIf="!isDocente && analisisForm.get('saved')?.value" class="calificaciones">
+        <div class="calificacion-display" [ngClass]="{
             'calificacion-correcta': getCalificacionValue('problem_decision.calificacion') === 'Correcto',
             'calificacion-incorrecta': getCalificacionValue('problem_decision.calificacion') === 'Incorrecto',
             'calificacion-no-calificado': getCalificacionValue('problem_decision.calificacion') === 'No Calificado'
           }">
-            {{ getCalificacionValue('problem_decision.calificacion') }}
-          </div>
-        </div>
-        <div class="pregunta-container">
-          <h5 class="pregunta">Decisión del problema *</h5>
-          <div [formGroupName]="'problem_decision'">
-            <app-caja-texto formControlName="decision"></app-caja-texto>
-          </div>
+          {{ getCalificacionValue('problem_decision.calificacion') }}
         </div>
       </div>
-      <div *ngIf="isDocente">
-        <button class="rate" *ngIf="isDocente" type="button"
-        (click)="toggleCalificar2('problem_decision')">
+      <div class="pregunta-container">
+        <h5 class="pregunta">Decisión del problema *</h5>
+        <div [formGroupName]="'problem_decision'">
+          <app-caja-texto formControlName="decision"></app-caja-texto>
+        </div>
+      </div>
+    </div>
+    <div *ngIf="isDocente">
+      <button class="rate" *ngIf="isDocente" type="button" (click)="toggleCalificar2('problem_decision')">
         Calificar *
       </button>
-        <div *ngIf="calificarState['problem_decision']">
-          <div class="bttns-rate">
-            <button class="correct-button" 
-              [class.calificacion-correcta]="isCalificacionCorrecta2('problem_decision')"
-              type="button" 
-              (click)="setCalificacion2('problem_decision', 'Correcto')">
-              Correcto
-            </button>
-            <button class="incorrect-button"
-              [class.calificacion-incorrecta]="!isCalificacionCorrecta2('problem_decision')"
-              type="button"
-              (click)="setCalificacion2('problem_decision', 'Incorrecto')">
-              Incorrecto
-            </button>
-          </div>
-          <div>
-            <h5 class="pregunta">Retroalimentación *</h5>
-            <div [formGroupName]="'problem_decision'">
-              <app-caja-texto 
-                formControlName="retroalimentacion"
-                (valueChange)="setRetroalimentacion('problem_decision', $event)">
-              </app-caja-texto>
-            </div>
+      <div *ngIf="calificarState['problem_decision']">
+        <div class="bttns-rate">
+          <button class="correct-button" [class.calificacion-correcta]="isCalificacionCorrecta2('problem_decision')"
+            type="button" (click)="setCalificacion2('problem_decision', 'Correcto')">
+            Correcto
+          </button>
+          <button class="incorrect-button"
+            [class.calificacion-incorrecta]="!isCalificacionCorrecta2('problem_decision')" type="button"
+            (click)="setCalificacion2('problem_decision', 'Incorrecto')">
+            Incorrecto
+          </button>
+        </div>
+        <div>
+          <h5 class="pregunta">Retroalimentación *</h5>
+          <div [formGroupName]="'problem_decision'">
+            <app-caja-texto formControlName="retroalimentacion"
+              (valueChange)="setRetroalimentacion('problem_decision', $event)">
+            </app-caja-texto>
           </div>
         </div>
       </div>
-      <div *ngIf="hasRetroalimentacion('problem_decision.retroalimentacion') && !isDocente" class="retroalimentacion-section">
-        <button type="button" (click)="toggleRetroalimentacionDecision($event)" class="bttn-toggle">
-          {{ mostrarRetroalimentacionDecision ? 'Ocultar' : 'Ver' }} retroalimentación
-        </button>
-        <div *ngIf="mostrarRetroalimentacionDecision" class="retroalimentacion-contenido">
-          <div class="retroalimentacion-texto">
-            {{ getRetroalimentacionValue('problem_decision.retroalimentacion') }}
-          </div>
+    </div>
+    <div *ngIf="hasRetroalimentacion('problem_decision.retroalimentacion') && !isDocente"
+      class="retroalimentacion-section">
+      <button type="button" (click)="toggleRetroalimentacionDecision($event)" class="bttn-toggle">
+        {{ mostrarRetroalimentacionDecision ? 'Ocultar' : 'Ver' }} retroalimentación
+      </button>
+      <div *ngIf="mostrarRetroalimentacionDecision" class="retroalimentacion-contenido">
+        <div class="retroalimentacion-texto">
+          {{ getRetroalimentacionValue('problem_decision.retroalimentacion') }}
         </div>
       </div>
+    </div>
 
-      <div class="bttn">
-        <button class="bttn-stnd" type="button" (click)="guardarYContinuar($event)">Guardar y continuar</button>
-        <div *ngIf="mostrarMensaje" class="alerta">
-          <p>{{ mensajeError }}</p>
-        </div>
-        <button class="custom-button" type="button" *ngIf="cargando">
-          <div class="spinner"></div>
-          <span class="button-text">Cargando...</span>
-        </button>
+    <div class="bttn">
+      <button class="bttn-stnd" type="button" (click)="volver()" style="background: #7f8c8d;">Volver atrás</button>
+      <button class="bttn-stnd" type="button" (click)="guardarYContinuar($event)">Guardar y continuar</button>
+      <div *ngIf="mostrarMensaje" class="alerta">
+        <p>{{ mensajeError }}</p>
       </div>
-    </form>
-  </div>
+      <button class="custom-button" type="button" *ngIf="cargando">
+        <div class="spinner"></div>
+        <span class="button-text">Cargando...</span>
+      </button>
+    </div>
+  </form>
+</div>

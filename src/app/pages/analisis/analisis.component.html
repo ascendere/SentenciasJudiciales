@@ -5,7 +5,13 @@
   <p class="dat"><strong> ASUNTO: </strong> {{ asunto }}</p>
   <p class="dat"><strong> ESTUDIANTE: </strong> {{ estudiante }} </p>
   <p class="dat"><strong> DOCENTE: </strong> {{ docente }}</p>
+  <div *ngIf="archivoURL" style="margin: 10px 30px; display: flex; justify-content: center; align-items: center; gap: 10px;">
+    <a [href]="archivoURL" target="_blank" class="bttn-view">
+      <i class="fa-solid fa-file-pdf"></i> Ver Sentencia
+    </a>
+  </div>
 </div>
+
 
 <div class="info-analisis">
   <h3 class="titulo-analisis">Esquema de las argumentaciones de la sentencia</h3>
@@ -13,7 +19,8 @@
   <form [formGroup]="analisisForm" (ngSubmit)="submitForm()">
     <!-- Alerta de bloqueo: Se muestra si la sentencia ha sido finalizada -->
     <div *ngIf="analisisForm.disabled" class="locked-message">
-      Esta sentencia está bloqueada y no puede ser editada.
+      Esta sentencia está bloqueada y no puede ser editada.<br>
+      Si desea desbloquear la sentencia, contacte con su docente.
     </div>
     <!-- Aqui empieza la pregunta del problema -->
     <div class="question">
@@ -21,7 +28,7 @@
         <div class="calificacion-display" [ngClass]="{
             'calificacion-correcta': getCalificacionValue('problem_question.calificacion') === 'Correcto',
             'calificacion-incorrecta': getCalificacionValue('problem_question.calificacion') === 'Incorrecto',
-            'calificacion-no-calificado': getCalificacionValue('problem_question.calificacion') === 'No Calificado'
+            'calificacion-no-calificado': getCalificacionValue('problem_question.calificacion') === 'Pendiente de validar'
           }">
           {{ getCalificacionValue('problem_question.calificacion') }}
         </div>
@@ -37,35 +44,32 @@
     <!-- Opciones de calificacion del docente -->
     <!-- Solo visible para usuarios con rol Docente o Admin -->
     <div *ngIf="isDocente">
-      <button class="rate" *ngIf="isDocente" type="button" (click)="toggleCalificar2('problem_question')">
-        Calificar *
-      </button>
-      <div *ngIf="calificarState['problem_question']">
         <div class="bttns-rate">
           <button class="correct-button" [class.calificacion-correcta]="isCalificacionCorrecta2('problem_question')"
             type="button" (click)="setCalificacion2('problem_question', 'Correcto')">
-            Correcto
+            Validar
           </button>
           <button class="incorrect-button"
-            [class.calificacion-incorrecta]="!isCalificacionCorrecta2('problem_question')" type="button"
+            [class.calificacion-incorrecta]="isCalificacionIncorrecta2('problem_question')" type="button"
             (click)="setCalificacion2('problem_question', 'Incorrecto')">
-            Incorrecto
+            No validar
           </button>
         </div>
-        <div>
-          <h5 class="pregunta">Retroalimentación *</h5>
-          <div [formGroupName]="'problem_question'">
-            <app-caja-texto formControlName="retroalimentacion"
-              (valueChange)="setRetroalimentacion('problem_question', $event)">
-            </app-caja-texto>
+        @if (isCalificacionIncorrecta2('problem_question')) {
+          <div>
+            <h5 class="pregunta">Justifique... *</h5>
+            <div [formGroupName]="'problem_question'">
+              <app-caja-texto formControlName="retroalimentacion"
+                (valueChange)="setRetroalimentacion('problem_question', $event)">
+              </app-caja-texto>
+            </div>
           </div>
-        </div>
-      </div>
+        }
     </div>
     <div *ngIf="hasRetroalimentacion('problem_question.retroalimentacion') && !isDocente"
       class="retroalimentacion-section">
       <button type="button" (click)="toggleRetroalimentacionPregunta($event)" class="bttn-toggle">
-        {{ mostrarRetroalimentacionPregunta ? 'Ocultar' : 'Ver' }} retroalimentación
+        {{ mostrarRetroalimentacionPregunta ? 'Ocultar' : 'Ver' }} justificación
       </button>
       <div *ngIf="mostrarRetroalimentacionPregunta" class="retroalimentacion-contenido">
         <div class="retroalimentacion-texto">
@@ -79,11 +83,11 @@
     <div formArrayName="normativas">
       <div *ngFor="let normativa of normativas.controls; let i=index" [formGroupName]="i">
         <div class="pa">
-          <div *ngIf="!isDocente && analisisForm.get('saved')?.value" class="calificaciones">
+          <div *ngIf="(!isDocente && analisisForm.get('saved')?.value )" class="calificaciones">
             <div class="calificacion-display" [ngClass]="{
                 'calificacion-correcta': getCalificacionValue('normativas.' + i + '.calificacion') === 'Correcto',
                 'calificacion-incorrecta': getCalificacionValue('normativas.' + i + '.calificacion') === 'Incorrecto',
-                'calificacion-no-calificado': getCalificacionValue('normativas.' + i + '.calificacion') === 'No Calificado'
+                'calificacion-no-calificado': getCalificacionValue('normativas.' + i + '.calificacion') === 'Pendiente de validar'
               }">
               {{ getCalificacionValue('normativas.' + i + '.calificacion') }}
             </div>
@@ -101,7 +105,7 @@
           <div class="retro">
             <div *ngIf="!isDocente && normativa.get('retroalimentacion')?.value">
               <button type="button" (click)="toggleRetroalimentacion($event, i)" class="bttn-toggle">
-                {{ mostrarRetroalimentacion[i] ? 'Ocultar' : 'Ver' }} retroalimentación
+                {{ mostrarRetroalimentacion[i] ? 'Ocultar' : 'Ver' }} justificación
               </button>
               <div *ngIf="mostrarRetroalimentacion[i]" class="retroalimentacion-contenido">
                 {{ normativa.get('retroalimentacion')?.value }}
@@ -115,24 +119,23 @@
               (click)="removeNormativa(i)">Eliminar Cuestión
               Normativa</button>
           </div>
-
-          <div class="">
-            <button class="rate" *ngIf="isDocente" type="button" (click)="toggleCalificar(i, 'normativa')">Calificar
-              *</button>
-            <div *ngIf="normativa.get('showCalificar')?.value">
-              <div class="bttns-rate">
-                <button class="correct-button" [class.calificacion-correcta]="isCalificacionCorrecta('normativa', i)"
-                  type="button" (click)="setCalificacion(i, 'normativa', 'Correcto')">
-                  Correcto
-                </button>
-                <button class="incorrect-button"
-                  [class.calificacion-incorrecta]="isCalificacionIncorrecta('normativa', i)" type="button"
-                  (click)="setCalificacion(i, 'normativa', 'Incorrecto')">
-                  Incorrecto
-                </button>
-              </div>
-              <label class="label-for-text" for="retroalimentacion-{{i}}">Retroalimentación *</label>
-              <app-caja-texto id="retroalimentacion-{{i}}" formControlName="retroalimentacion"></app-caja-texto>
+          <div *ngIf="isDocente">
+            <div class="">
+                <div class="bttns-rate">
+                  <button class="correct-button" [class.calificacion-correcta]="isCalificacionCorrecta('normativa', i)"
+                    type="button" (click)="setCalificacion(i, 'normativa', 'Correcto')">
+                    Validar
+                  </button>
+                  <button class="incorrect-button"
+                    [class.calificacion-incorrecta]="isCalificacionIncorrecta('normativa', i)" type="button"
+                    (click)="setCalificacion(i, 'normativa', 'Incorrecto')">
+                    No validar
+                  </button>
+                </div>
+                @if (isCalificacionIncorrecta('normativa', i)) {
+                  <label class="pregunta" for="retroalimentacion-norm-{{i}}">Justifique... *</label>
+                  <app-caja-texto id="retroalimentacion-norm-{{i}}" formControlName="retroalimentacion"></app-caja-texto>
+                }
             </div>
           </div>
         </div>
@@ -154,7 +157,7 @@
           <div class="calificacion-display" [ngClass]="{
               'calificacion-correcta': getCalificacionValue('facticas.' + i + '.calificacion') === 'Correcto',
               'calificacion-incorrecta': getCalificacionValue('facticas.' + i + '.calificacion') === 'Incorrecto',
-              'calificacion-no-calificado': getCalificacionValue('facticas.' + i + '.calificacion') === 'No Calificado'
+              'calificacion-no-calificado': getCalificacionValue('facticas.' + i + '.calificacion') === 'Pendiente de validar'
             }">
             {{ getCalificacionValue('facticas.' + i + '.calificacion') }}
           </div>
@@ -173,7 +176,7 @@
           <div class="retro">
             <div *ngIf="!isDocente && factica.get('retroalimentacion')?.value">
               <button type="button" (click)="toggleRetroalimentacion($event, i)" class="bttn-toggle">
-                {{ mostrarRetroalimentacion[i] ? 'Ocultar' : 'Ver' }} retroalimentación
+                {{ mostrarRetroalimentacion[i] ? 'Ocultar' : 'Ver' }} justificación
               </button>
               <div *ngIf="mostrarRetroalimentacion[i]" class="retroalimentacion-contenido">
                 {{ factica.get('retroalimentacion')?.value }}
@@ -188,24 +191,22 @@
               Fáctica</button>
           </div>
 
-          <div>
-            <button class="rate" *ngIf="isDocente" type="button" (click)="toggleCalificar(i, 'factica')">Calificar
-              *</button>
-            <div *ngIf="factica.get('showCalificar')?.value">
+          <div *ngIf="isDocente">
               <div class="bttns-rate">
                 <button class="correct-button" [class.calificacion-correcta]="isCalificacionCorrecta('factica', i)"
                   type="button" (click)="setCalificacion(i, 'factica', 'Correcto')">
-                  Correcto
+                  Validar
                 </button>
                 <button class="incorrect-button"
                   [class.calificacion-incorrecta]="isCalificacionIncorrecta('factica', i)" type="button"
                   (click)="setCalificacion(i, 'factica', 'Incorrecto')">
-                  Incorrecto
+                  No validar
                 </button>
               </div>
-              <label class="label-for-text" for="retroalimentacion-{{i}}">Retroalimentación *</label>
-              <app-caja-texto id="retroalimentacion-{{i}}" formControlName="retroalimentacion"></app-caja-texto>
-            </div>
+              @if (isCalificacionIncorrecta('factica', i)) {
+                <label class="pregunta" for="retroalimentacion-fact-{{i}}">Justifique... *</label>
+                <app-caja-texto id="retroalimentacion-fact-{{i}}" formControlName="retroalimentacion"></app-caja-texto>
+              }
           </div>
         </div>
       </div>
@@ -223,7 +224,7 @@
         <div class="calificacion-display" [ngClass]="{
             'calificacion-correcta': getCalificacionValue('problem_decision.calificacion') === 'Correcto',
             'calificacion-incorrecta': getCalificacionValue('problem_decision.calificacion') === 'Incorrecto',
-            'calificacion-no-calificado': getCalificacionValue('problem_decision.calificacion') === 'No Calificado'
+            'calificacion-no-calificado': getCalificacionValue('problem_decision.calificacion') === 'Pendiente de validar'
           }">
           {{ getCalificacionValue('problem_decision.calificacion') }}
         </div>
@@ -236,35 +237,32 @@
       </div>
     </div>
     <div *ngIf="isDocente">
-      <button class="rate" *ngIf="isDocente" type="button" (click)="toggleCalificar2('problem_decision')">
-        Calificar *
-      </button>
-      <div *ngIf="calificarState['problem_decision']">
         <div class="bttns-rate">
           <button class="correct-button" [class.calificacion-correcta]="isCalificacionCorrecta2('problem_decision')"
             type="button" (click)="setCalificacion2('problem_decision', 'Correcto')">
-            Correcto
+            Validar
           </button>
           <button class="incorrect-button"
-            [class.calificacion-incorrecta]="!isCalificacionCorrecta2('problem_decision')" type="button"
+            [class.calificacion-incorrecta]="isCalificacionIncorrecta2('problem_decision')" type="button"
             (click)="setCalificacion2('problem_decision', 'Incorrecto')">
-            Incorrecto
+            No validar
           </button>
         </div>
-        <div>
-          <h5 class="pregunta">Retroalimentación *</h5>
-          <div [formGroupName]="'problem_decision'">
-            <app-caja-texto formControlName="retroalimentacion"
-              (valueChange)="setRetroalimentacion('problem_decision', $event)">
-            </app-caja-texto>
+        @if (isCalificacionIncorrecta2('problem_decision')) {
+          <div>
+            <h5 class="pregunta">Justifique... *</h5>
+            <div [formGroupName]="'problem_decision'">
+              <app-caja-texto formControlName="retroalimentacion"
+                (valueChange)="setRetroalimentacion('problem_decision', $event)">
+              </app-caja-texto>
+            </div>
           </div>
-        </div>
-      </div>
+        }
     </div>
     <div *ngIf="hasRetroalimentacion('problem_decision.retroalimentacion') && !isDocente"
       class="retroalimentacion-section">
       <button type="button" (click)="toggleRetroalimentacionDecision($event)" class="bttn-toggle">
-        {{ mostrarRetroalimentacionDecision ? 'Ocultar' : 'Ver' }} retroalimentación
+        {{ mostrarRetroalimentacionDecision ? 'Ocultar' : 'Ver' }} justificación
       </button>
       <div *ngIf="mostrarRetroalimentacionDecision" class="retroalimentacion-contenido">
         <div class="retroalimentacion-texto">
@@ -274,7 +272,7 @@
     </div>
 
     <div class="bttn">
-      <button class="bttn-stnd" type="button" (click)="volver()" style="background: #7f8c8d;">Volver atrás</button>
+      <button class="bttn-stnd" type="button" (click)="volver()" style="background: #7f8c8d;">Guardar y volver</button>
       <button class="bttn-stnd" type="button" (click)="guardarYContinuar($event)">Guardar y continuar</button>
       <div *ngIf="mostrarMensaje" class="alerta">
         <p>{{ mensajeError }}</p>
@@ -286,3 +284,11 @@
     </div>
   </form>
 </div>
+<!-- Modal de confirmacion cuando hay campos vacios o sin calificar -->
+<app-alert-modal
+  [message]="alertModalMessage"
+  [visible]="confirmModalVisible"
+  [isConfirm]="!isDocente"
+  (closeModal)="onCancelConfirm()"
+  (confirm)="onConfirmContinuar()">
+</app-alert-modal>

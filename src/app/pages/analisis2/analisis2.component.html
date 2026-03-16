@@ -5,7 +5,13 @@
   <p class="dat"><strong> ASUNTO: </strong> {{ asunto }}</p>
   <p class="dat"><strong> ESTUDIANTE: </strong> {{ estudiante }} </p>
   <p class="dat"><strong> DOCENTE: </strong> {{ docente }}</p>
+  <div *ngIf="archivoURL" style="margin: 10px 30px; display: flex; justify-content: center; align-items: center; gap: 10px;">
+    <a [href]="archivoURL" target="_blank" class="bttn-view">
+      <i class="fa-solid fa-file-pdf"></i> Ver Sentencia
+    </a>
+  </div>
 </div>
+
 
 <div class="info-analisis">
   <form [formGroup]="analisis2Form" (ngSubmit)="submitForm()">
@@ -31,47 +37,51 @@
         <div class="calificacion-display" [ngClass]="{
         'calificacion-correcta': getCalificacionValue(section.id + '_calificacion') === 'Correcto',
         'calificacion-incorrecta': getCalificacionValue(section.id + '_calificacion') === 'Incorrecto',
-        'calificacion-no-calificado': getCalificacionValue(section.id + '_calificacion') === 'No Calificado'
+        'calificacion-no-calificado': getCalificacionValue(section.id + '_calificacion') === 'Pendiente de validar'
       }">
           {{ getCalificacionValue(section.id + '_calificacion') }}
         </div>
       </div>
       <app-caja-texto [id]="section.id" [formControlName]="section.id" [titulo]="section.title">
       </app-caja-texto>
-      <button class="rate" *ngIf="isDocente" type="button" (click)="toggleCalificar(section.id)">Calificar *</button>
-      <div *ngIf="calificarState[section.id]">
-        <div class="bttns-rate">
-          <button class="correct-button" type="button"
-            [ngClass]="{'selected': selectedButtons[section.id] === 'Correcto'}"
-            (click)="setCalificacion(section.id, 'Correcto')">Correcto</button>
-          <button class="incorrect-button" type="button"
-            [ngClass]="{'selected': selectedButtons[section.id] === 'Incorrecto'}"
-            (click)="setCalificacion(section.id, 'Incorrecto')">Incorrecto</button>
-        </div>
-        <div>
-          <app-caja-texto [formControlName]="section.id + '_retroalimentacion'"
-            [titulo]="'Retroalimentación *'"></app-caja-texto>
-        </div>
-      </div>
-
-      <div *ngIf="!isDocente && getRetroalimentacionValue(section.id + '_retroalimentacion')">
-        <button type="button" (click)="toggleRetroalimentacion(section.id)" class="bttn-toggle">
-          {{ mostrarRetroalimentacion[section.id] ? 'Ocultar' : 'Ver' }} retroalimentación
-        </button>
-        <div *ngIf="mostrarRetroalimentacion[section.id]" class="retroalimentacion-contenido">
-          <div class="retroalimentacion-texto">
-            {{ getRetroalimentacionValue(section.id + '_retroalimentacion') }}
+          <div *ngIf="isDocente">
+            <div class="bttns-rate">
+              <button class="correct-button" type="button"
+                [ngClass]="{'selected': selectedButtons[section.id] === 'Correcto'}"
+                (click)="setCalificacion(section.id, 'Correcto')">Validar</button>
+              <button class="incorrect-button" type="button"
+                [ngClass]="{'selected': selectedButtons[section.id] === 'Incorrecto'}"
+                (click)="setCalificacion(section.id, 'Incorrecto')">No validar</button>
+            </div>
+            @if (selectedButtons[section.id] === 'Incorrecto') {
+              <div>
+                <app-caja-texto [formControlName]="section.id + '_retroalimentacion'"
+                  [titulo]="'Justifique... *'"></app-caja-texto>
+              </div>
+            }
           </div>
+          <div *ngIf="!isDocente && getRetroalimentacionValue(section.id + '_retroalimentacion')">
+            <button type="button" (click)="toggleRetroalimentacion(section.id)" class="bttn-toggle">
+              {{ mostrarRetroalimentacion[section.id] ? 'Ocultar' : 'Ver' }} justificación
+            </button>
+            <div *ngIf="mostrarRetroalimentacion[section.id]" class="retroalimentacion-contenido">
+              <div class="retroalimentacion-texto">
+                {{ getRetroalimentacionValue(section.id + '_retroalimentacion') }}
+              </div>
+            </div>
+          </div>
+          <hr>
         </div>
-      </div>
-      <hr>
-    </div>
     <br>
-    <button class="bttn-stnd" type="submit">Guardar</button>
+    <!-- <button class="bttn-stnd" type="submit">Guardar</button> -->
   </form>
+<!-- 
+    <div class="locked-message" style="width: 100%; text-align: center;">
+      <i class="fa-solid fa-circle-info"></i> El botón anterior no guardará los cambios.
+    </div> -->
 
   <div class="bttn">
-    <button class="bttn-stnd" (click)="redirectToAnalisis()">Anterior</button>
+    <button class="bttn-stnd" (click)="redirectToAnalisis()">Guardar y volver</button>
     <div *ngIf="mostrarMensaje" class="alerta">
       <p>{{ mensajeError }}</p>
     </div>
@@ -79,6 +89,14 @@
       <div class="spinner"></div>
       <span class="button-text">Cargando...</span>
     </button>
-    <button class="bttn-stnd" (click)="redirectToEvaluacion($event)" [disabled]="!docenteSaved">Evaluación</button>
+    <button class="bttn-stnd" (click)="guardarYContinuar($event)">Guardar y continuar</button>
   </div>
 </div>
+<!-- Modal de confirmacion cuando hay campos vacios o pendientes -->
+<app-alert-modal
+  [message]="alertModalMessage"
+  [visible]="confirmModalVisible"
+  [isConfirm]="!isDocente"
+  (closeModal)="onCancelConfirm()"
+  (confirm)="onConfirmContinuar()">
+</app-alert-modal>

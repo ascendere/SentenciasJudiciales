@@ -21,6 +21,7 @@ export class EvaluacionComponent implements OnInit {
   saved = false
   docenteSaved = false
   isDocente = false
+  archivoURL = ""
   mostrarMensaje = false
   calificaciones: { [key: string]: string } = {}
 
@@ -40,6 +41,11 @@ export class EvaluacionComponent implements OnInit {
   initialFormValue: any = null
   showValidationErrors = false
   incompleteSections: string[] = []
+
+  // Variables para el modal de confirmación de campos vacíos
+  alertModalMessage = '';
+  confirmModalVisible = false;
+  private _pendingGuardar: (() => void) | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -206,6 +212,7 @@ export class EvaluacionComponent implements OnInit {
       this.asunto = params["asunto"] || ""
       this.estudiante = params["estudiante"] || ""
       this.docente = params["docente"] || ""
+      this.archivoURL = params["archivoURL"] || ""
       this.evaluacionForm.patchValue({
         numero_proceso: this.numero_proceso,
       })
@@ -802,27 +809,23 @@ export class EvaluacionComponent implements OnInit {
   }
 
   // Función submitForm con validación estricta
-  submitForm() {
+  submitForm(redirecting: boolean = false, fromGuardarYContinuar: boolean = false) {
     // Quitar validaciones estrictas temporalmente
     // NUEVO: Validación específica para estudiantes - REQUIERE TODAS LAS SECCIONES
-    // if (!this.isDocente) {
-    //   if (!this.isFormCompleteForStudent()) {
-    //     const incompleteDetails = this.getDetailedIncompleteSections()
-    //     this.mostrarMensajeError(`Complete TODAS las secciones antes de guardar:\n\n${incompleteDetails}`)
-    //     this.showValidationErrors = true
-    //     return
-    //   }
-    // } else {
-    //   // Validación original para docentes
-    //   if (!this.validateAllSections()) {
-    //     return
-    //   }
-    // }
+    if (!this.isDocente) {
+      // Validado vía tieneCamposVacios en guardarYContinuar
+    } else {
+      // Validación para docentes
+      if (fromGuardarYContinuar && this.tieneValidacionesPendientesDocente()) {
+        this.mostrarMensajeError('Por favor, califique todas las preguntas antes de guardar.');
+        return;
+      }
+    }
 
     this.isSubmitting = true
     this.cargando = true
     this.evaluacionForm.patchValue({ saved: true })
-    if (this.isDocente) {
+    if (this.isDocente && fromGuardarYContinuar) {
       this.evaluacionForm.patchValue({ docenteSaved: true })
     }
     const analisisData = this.evaluacionForm.getRawValue()
@@ -854,18 +857,24 @@ export class EvaluacionComponent implements OnInit {
     this.firestore
       .collection("evaluacion")
       .doc(this.numero_proceso)
-      .set(analisisData)
+      .set(analisisData, { merge: true })
       .then(() => {
         this.saved = true
         // NUEVO: Actualizar estado después de guardar
         this.hasUnsavedChanges = false
         this.saveInitialFormState()
         this.showValidationErrors = false
-        window.location.reload()
         this.cargando = false
-        setTimeout(() => {
-          this.isSubmitting = false
-        }, 100)
+        // CAMBIO CLAVE: Solo recarga si NO vamos a redirigir
+        if (!redirecting) {
+          setTimeout(() => {
+            this.isSubmitting = false;
+            window.location.reload();
+          }, 1000);
+        } else {
+          // Si estamos redirigiendo, no recargamos, solo quitamos el estado de submit
+          this.isSubmitting = false;
+        }
       })
       .catch((error) => {
         this.cargando = false
@@ -905,6 +914,7 @@ export class EvaluacionComponent implements OnInit {
         asunto: this.asunto,
         estudiante: this.estudiante,
         docente: this.docente,
+        archivoURL: this.archivoURL,
       },
     })
   }
@@ -912,21 +922,69 @@ export class EvaluacionComponent implements OnInit {
   guardarYContinuar(event: Event) {
     event.preventDefault();
 
-    // Quitar validaciones estrictas temporalmente
-    // Primero guardar
-    this.submitForm();
+    const doGuardar = () => {
+      this.submitForm(true, true);
+      setTimeout(() => {
+        this.router.navigate(["/evaluacion2"], {
+          queryParams: {
+            numero_proceso: this.numero_proceso,
+            asunto: this.asunto,
+            estudiante: this.estudiante,
+            docente: this.docente,
+            archivoURL: this.archivoURL,
+          },
+        });
+      }, 1500);
+    };
 
-    // Luego navegar después de un breve delay para asegurar que se guarde
-    setTimeout(() => {
-      this.router.navigate(["/evaluacion2"], {
-        queryParams: {
-          numero_proceso: this.numero_proceso,
-          asunto: this.asunto,
-          estudiante: this.estudiante,
-          docente: this.docente,
-        },
-      });
-    }, 1500);
+    if (this.tieneCamposVacios() && !this.isDocente) {
+      this._pendingGuardar = doGuardar;
+      this.alertModalMessage = 'Tiene campos vacíos, complételos para avanzar.';
+      this.confirmModalVisible = true;
+    } else if (this.isDocente && this.tieneValidacionesPendientesDocente()) {
+      this.alertModalMessage = 'Por favor, califique todas las preguntas antes de continuar.';
+      this.confirmModalVisible = true;
+    } else {
+      doGuardar();
+    }
+  }
+
+  /** Devuelve true si el docente tiene validaciones pendientes */
+  tieneValidacionesPendientesDocente(): boolean {
+    const data = this.getProgressData();
+    return data.completed < data.total;
+  }
+
+  /** Devuelve true si alguno de los campos del estudiante está vacío */
+  tieneCamposVacios(): boolean {
+    const values = this.evaluacionForm.getRawValue();
+    return this.hayVaciosEnValor(values, '');
+  }
+
+  /** Verifica recursivamente si hay valores vacíos, ignorando campos de docente */
+  private hayVaciosEnValor(val: any, key: string): boolean {
+    const ignorar = ['calificacion', 'retroalimentacion', 'saved', 'docenteSaved', 'timestamp', 'numero_proceso'];
+    if (ignorar.some(k => key.toLowerCase().includes(k))) return false;
+    if (val === null || val === undefined || val === '') return true;
+    if (typeof val === 'boolean') return false;
+    if (Array.isArray(val)) return val.length === 0 || val.some((v: any) => this.hayVaciosEnValor(v, key));
+    if (typeof val === 'object') return Object.entries(val).some(([k, v]) => this.hayVaciosEnValor(v, k));
+    return false;
+  }
+
+  /** El usuario confirmó continuar con campos vacíos */
+  onConfirmContinuar(): void {
+    this.confirmModalVisible = false;
+    if (this._pendingGuardar) {
+      this._pendingGuardar();
+      this._pendingGuardar = null;
+    }
+  }
+
+  /** El usuario canceló, cerrar modal */
+  onCancelConfirm(): void {
+    this.confirmModalVisible = false;
+    this._pendingGuardar = null;
   }
 
   getAppearanceSubsectionDetails(habit: string)
@@ -1146,10 +1204,10 @@ export class EvaluacionComponent implements OnInit {
 
   getCalificacionValue(controlPath: string): string {
     const control = this.evaluacionForm.get(controlPath)
-    if (control) {
-      return control.value ? control.value : "No Calificado"
-    }
-    return "No Calificado"
+    const value = control?.value;
+    // Traduce 'No Calificado' a 'Sin validar' solo para visualización
+    if (!value || value === 'No Calificado' || value === 'No calificado') return 'Pendiente de validar';
+    return value;
   }
 
   setCalificacion(controlPath: string, calificacion: string): void {
@@ -1161,21 +1219,18 @@ export class EvaluacionComponent implements OnInit {
   }
 
   redirectToAnalisis2() {
-    // NUEVO: Verificar cambios no guardados antes de navegar
-    if (!this.isDocente && this.hasUnsavedChanges) {
-      if (!confirm('Tiene cambios sin guardar. ¿Está seguro de que desea continuar sin guardar?')) {
-        return
-      }
-    }
-
-    this.router.navigate(["/analisis2"], {
-      queryParams: {
-        numero_proceso: this.numero_proceso,
-        asunto: this.asunto,
-        estudiante: this.estudiante,
-        docente: this.docente,
-      },
-    })
+    this.submitForm(true, false);
+    setTimeout(() => {
+      this.router.navigate(["/analisis2"], {
+        queryParams: {
+          numero_proceso: this.numero_proceso,
+          asunto: this.asunto,
+          estudiante: this.estudiante,
+          docente: this.docente,
+          archivoURL: this.archivoURL
+        },
+      });
+    }, 1500);
   }
 
   toggleCalificar(section: string) {
@@ -1379,6 +1434,84 @@ export class EvaluacionComponent implements OnInit {
         return "Evaluación Final"
       default:
         return section
+    }
+  }
+
+  // Obtener progreso de respuestas o validaciones
+  getProgressData(): { completed: number, total: number, percentage: number } {
+    let itemsToCheck: string[] = [];
+
+    if (!this.isDocente) {
+      itemsToCheck = [
+        'motivationType',
+        'nonexistinence.lackFoundationNormative', 'nonexistinence.reasonsNormative',
+        'nonexistinence.lackFoundationFactual', 'nonexistinence.reasonsFactual',
+        'insufficiency.lackFoundationNormative', 'insufficiency.reasonsNormative',
+        'insufficiency.lackFoundationFactual', 'insufficiency.reasonsFactual',
+        'appearance.motivationalHabit',
+        'appearance.incoherence.existsLogicalNormative', 'appearance.incoherence.reasonsLogicaNormative',
+        'appearance.incoherence.existsDecisionalNormative', 'appearance.incoherence.reasonsDecisionalNormative',
+        'appearance.incoherence.existsLogicalFactual', 'appearance.incoherence.reasonsLogicalFactual',
+        'appearance.incoherence.existsDecisionalFactual', 'appearance.incoherence.reasonsDecisionalFactual',
+        'appearance.incoherence.lackMotivation', 'appearance.incoherence.reasonsMotivation',
+        'appearance.inatinence.existsInatinenceJuridical', 'appearance.inatinence.reasonsInatinenceJuridical',
+        'appearance.inatinence.existsInatinenceFactual', 'appearance.inatinence.reasonsInatinenceFactual',
+        'appearance.incomprehensibility.existsIncomprehensibilityJuridical', 'appearance.incomprehensibility.reasonsIncomprehensibilityJuridical',
+        'appearance.incomprehensibility.existsIncomprehensibilityFactual', 'appearance.incomprehensibility.reasonsIncomprehensibilityFactual',
+        'appearance.incongruity.existsIncongruityNormativeParticipants', 'appearance.incongruity.reasonsIncongruityNormativeParticipants',
+        'appearance.incongruity.existsIncongruityNormativeLaw', 'appearance.incongruity.reasonsIncongruityNormativeLaw',
+        'appearance.incongruity.existsIncongruityFactualParticipants', 'appearance.incongruity.reasonsIncongruityFactualParticipants',
+        'appearance.incongruity.existsIncongruityFactualLaw', 'appearance.incongruity.reasonsIncongruityFactualLaw',
+        'finalMotivationDeficit', 'finalMotivationReasons'
+      ];
+
+      let completed = 0;
+      for (const item of itemsToCheck) {
+        const val = this.evaluacionForm.get(item)?.value;
+        if (val !== null && val !== undefined && val !== '') {
+          completed++;
+        }
+      }
+      const total = itemsToCheck.length;
+      return { completed, total, percentage: total === 0 ? 0 : Math.round((completed / total) * 100) };
+
+    } else {
+      itemsToCheck = [
+        'motivationType_calificacion',
+        'nonexistinence.normative_calificacion',
+        'nonexistinence.factual_calificacion',
+        'insufficiency.normative_calificacion',
+        'insufficiency.factual_calificacion',
+        'appearance.motivationalHabit_calificacion',
+        'appearance.incoherence.logicaNormative_calificacion',
+        'appearance.incoherence.decisionalNormative_calificacion',
+        'appearance.incoherence.logicalFactual_calificacion',
+        'appearance.incoherence.decisionalFactual_calificacion',
+        'appearance.incoherence.motivation_calificacion',
+        'appearance.inatinence.inatinenceJuridical_calificacion',
+        'appearance.inatinence.inatinenceFactual_calificacion',
+        'appearance.incomprehensibility.incomprehensibilityJuridical_calificacion',
+        'appearance.incomprehensibility.incomprehensibilityFactual_calificacion',
+        'appearance.incongruity.normativeParticipants_calificacion',
+        'appearance.incongruity.normativeLaw_calificacion',
+        'appearance.incongruity.factualParticipants_calificacion',
+        'appearance.incongruity.factualLaw_calificacion',
+        'finalMotivation_calificacion'
+      ];
+
+      let completed = 0;
+      for (const item of itemsToCheck) {
+        let val = this.buttonStates[item];
+        if (!val) {
+          const control = this.evaluacionForm.get(item);
+          val = control?.value;
+        }
+        if (val === 'Correcto' || val === 'Incorrecto') {
+          completed++;
+        }
+      }
+      const total = itemsToCheck.length;
+      return { completed, total, percentage: total === 0 ? 0 : Math.round((completed / total) * 100) };
     }
   }
 }

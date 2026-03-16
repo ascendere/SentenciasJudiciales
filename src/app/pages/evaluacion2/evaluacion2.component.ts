@@ -54,6 +54,11 @@ export class Evaluacion2Component implements OnInit {
   docenteSaved = false;
   selectedButton: string | null = null;
   isDocente = false;
+  archivoURL = "";
+  alertModalVisible = false;
+  alertModalMessage = '';
+  confirmModalVisible = false;
+  private _pendingGuardar: (() => void) | null = null;
 
   // Usamos UserData importado y añadimos currentUserData
   currentUser: Observable<UserData | null | undefined> = of(null);
@@ -107,18 +112,84 @@ export class Evaluacion2Component implements OnInit {
   guardarYFinalizar(event: Event) {
     event.preventDefault();
 
-    // Quitar validaciones estrictas temporalmente
-    // Mostrar loading y guardar
-    this.cargando = true;
-    this.submitForm();
-
-    // Mostrar mensaje de éxito después de guardar
-    setTimeout(() => {
-      this.mostrarMensajeExitoFuncion('Se ha guardado la sección');
+    const doGuardar = () => {
+      this.submitForm(true, true);
       setTimeout(() => {
-        this.router.navigate(['/principal']);
-      }, 2000);
-    }, 1500);
+        if (!this.isDocente) {
+          this.alertModalMessage = 'Se ha finalizado el proceso de análisis y evaluación de la motivación de la sentencia, la información quedará pendiente para que el docente realice la validación.';
+          this.alertModalVisible = true;
+        } else {
+          this.mostrarMensajeExitoFuncion('Se ha guardado la sección');
+          setTimeout(() => this.router.navigate(['/principal']), 2000);
+        }
+      }, 1500);
+    };
+
+    if (this.tieneCamposVacios() && !this.isDocente) {
+      this._pendingGuardar = doGuardar;
+      this.alertModalMessage = 'Tiene campos vacíos, complételos para avanzar.';
+      this.confirmModalVisible = true;
+    } else if (this.isDocente && this.tieneValidacionesPendientesDocente()) {
+      this.alertModalMessage = 'Por favor, califique todas las preguntas antes de continuar.';
+      this.confirmModalVisible = true;
+    } else {
+      doGuardar();
+    }
+  }
+
+  /** Devuelve true si el docente tiene validaciones pendientes */
+  tieneValidacionesPendientesDocente(): boolean {
+    const data = this.evaluacion2Form.getRawValue();
+    const sectionsToCheck = [
+      'sentenceSubject_calificacion',
+      'reasonsNormative_calificacion',
+      'finalConclusion_calificacion'
+    ];
+    let completados = 0;
+    for (const campo of sectionsToCheck) {
+      if (data[campo] === 'Correcto' || data[campo] === 'Incorrecto') {
+        completados++;
+      }
+    }
+    return completados < sectionsToCheck.length;
+  }
+
+  /** Devuelve true si alguno de los campos del estudiante está vacío */
+  tieneCamposVacios(): boolean {
+    const values = this.evaluacion2Form.getRawValue();
+    return this.hayVaciosEnValor(values, '');
+  }
+
+  /** Verifica recursivamente si hay valores vacíos, ignorando campos de docente */
+  private hayVaciosEnValor(val: any, key: string): boolean {
+    const ignorar = ['calificacion', 'retroalimentacion', 'saved', 'docenteSaved', 'timestamp', 'numero_proceso'];
+    if (ignorar.some(k => key.toLowerCase().includes(k))) return false;
+    if (val === null || val === undefined || val === '') return true;
+    if (typeof val === 'boolean') return false;
+    if (Array.isArray(val)) return val.length === 0 || val.some((v: any) => this.hayVaciosEnValor(v, key));
+    if (typeof val === 'object') return Object.entries(val).some(([k, v]) => this.hayVaciosEnValor(v, k));
+    return false;
+  }
+
+  /** El usuario confirmó continuar con campos vacíos */
+  onConfirmContinuar(): void {
+    this.confirmModalVisible = false;
+    if (this._pendingGuardar) {
+      this._pendingGuardar();
+      this._pendingGuardar = null;
+    }
+  }
+
+  /** El usuario canceló, cerrar modal */
+  onCancelConfirm(): void {
+    this.confirmModalVisible = false;
+    this._pendingGuardar = null;
+  }
+
+  /** Cierra el modal de alerta y navega a principal */
+  onAlertModalClose(): void {
+    this.alertModalVisible = false;
+    this.router.navigate(['/principal']);
   }
 
   formatQuestion(question: string): string {
@@ -165,6 +236,7 @@ export class Evaluacion2Component implements OnInit {
       this.asunto = params.get('asunto') || '';
       this.estudiante = params.get('estudiante') || '';
       this.docente = params.get('docente') || '';
+      this.archivoURL = params.get('archivoURL') || '';
       this.evaluacion2Form.patchValue({
         numero_proceso: this.numero_proceso
       });
@@ -285,16 +357,21 @@ export class Evaluacion2Component implements OnInit {
    * Guarda la evaluación de motivación correcta.
    * Si es docente, marca la revisión.
    */
-  submitForm() {
+  submitForm(redirecting: boolean = false, fromGuardarYContinuar: boolean = false) {
     // Quitar validaciones estrictas temporalmente
     // if (this.evaluacion2Form.valid) {
     this.isSubmitting = true;
     this.cargando = true;
     const analisisData = this.evaluacion2Form.value;
     analisisData.saved = true;
-    this.firestore.collection('evaluacion2').doc(this.numero_proceso).set(analisisData)
+    
+    if (this.isDocente && fromGuardarYContinuar) {
+      analisisData.docenteSaved = true;
+    }
+
+    this.firestore.collection('evaluacion2').doc(this.numero_proceso).set(analisisData, { merge: true })
       .then(() => {
-        if (this.isDocente) {
+        if (this.isDocente && fromGuardarYContinuar) {
           this.docenteSaved = true;
         }
         this.cargando = false;
@@ -302,10 +379,16 @@ export class Evaluacion2Component implements OnInit {
         this.evaluacion2Form.patchValue({ saved: true });
         // console.log('Form submitted and saved:', analisisData);
         this.mostrarMensajeExitoFuncion('Se ha guardado la sección');
-        setTimeout(() => {
-          // Recargar solo si no vamos a redirigir, en este caso permitimos seguir
-          window.location.reload();
-        }, 1000);
+        // CAMBIO CLAVE: Solo recarga si NO vamos a redirigir
+        if (!redirecting) {
+          setTimeout(() => {
+            this.isSubmitting = false;
+            window.location.reload();
+          }, 1000);
+        } else {
+          // Si estamos redirigiendo, no recargamos, solo quitamos el estado de submit
+          this.isSubmitting = false;
+        }
       })
       .catch(error => {
         // console.error("Error saving document: ", error);
@@ -436,8 +519,9 @@ export class Evaluacion2Component implements OnInit {
 
   getCalificacionValue(controlName: string): string {
     const value = this.evaluacion2Form.get(controlName)?.value;
-    // console.log(`Calificación para ${controlName}:`, value); // Para depuración
-    return value ? value : 'No Calificado';
+    // Traduce 'No Calificado' a 'Sin validar' solo para visualización
+    if (!value || value === 'No Calificado' || value === 'No calificado') return 'Pendiente de validar';
+    return value;
   }
 
   getRetroalimentacionValue(controlName: string): string {
@@ -446,14 +530,18 @@ export class Evaluacion2Component implements OnInit {
   }
 
   redirectToEvaluacion() {
-    this.router.navigate(['/evaluacion'], {
-      queryParams: {
-        numero_proceso: this.numero_proceso,
-        asunto: this.asunto,
-        estudiante: this.estudiante,
-        docente: this.docente
-      }
-    });
+    this.submitForm(true, false);
+    setTimeout(() => {
+      this.router.navigate(['/evaluacion'], {
+        queryParams: {
+          numero_proceso: this.numero_proceso,
+          asunto: this.asunto,
+          estudiante: this.estudiante,
+          docente: this.docente,
+          archivoURL: this.archivoURL
+        }
+      });
+    }, 1500);
   }
 
   saveFormChanges() {

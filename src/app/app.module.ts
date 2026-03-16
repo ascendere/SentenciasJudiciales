@@ -24,6 +24,7 @@ import { AuthService } from './services/auth.service';
 import { FooterComponent } from "./components/footer/footer.component";
 import { EditarSentenciaComponent } from './pages/editar-sentencia/editar-sentencia.component';
 import { CommonModule } from '@angular/common';
+import { AlertModalComponent } from './components/alert-modal/alert-modal.component';
 
 
 const isIE = window.navigator.userAgent.indexOf('MSIE ') > -1 || window.navigator.userAgent.indexOf('Trident/') > -1;
@@ -94,7 +95,8 @@ export function MSALInstanceFactory(): IPublicClientApplication {
     EvaluacionComponent,
     CajaTextoComponent,
     Evaluacion2Component,
-    EditarSentenciaComponent
+    EditarSentenciaComponent,
+    AlertModalComponent
   ],
   imports: [
     MsalModule.forRoot(new PublicClientApplication({

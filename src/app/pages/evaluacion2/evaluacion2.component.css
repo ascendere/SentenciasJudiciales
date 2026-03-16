@@ -254,3 +254,50 @@ input:disabled, textarea:disabled, select:disabled {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+.bttn-download {
+  background: none;
+  border: none;
+  border-bottom: solid 1px #172D5A;
+  font-family: Poppins;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 600;
+  color: #172D5A;
+  margin-top: 10px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.locked-message {
+  color: #711d1d;
+  font-family: Poppins;
+  font-size: 14px;
+  font-weight: 500;
+  background-color: #faf8f8;
+  padding: 10px;
+  border-radius: 8px;
+  border-left: 4px solid #FFAB02;
+  display: inline-block;
+  margin-bottom: 5px;
+}
+
+.bttn-view {
+  background-color: #172D5A;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-family: Poppins;
+  font-weight: bold;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bttn-view:hover {
+  background-color: #1a2a4d;
+}

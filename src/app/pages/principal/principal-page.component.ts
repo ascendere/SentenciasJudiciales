@@ -83,6 +83,11 @@ export class PrincipalPageComponent implements OnInit {
   alert: string = '';
   alertype: 'success' | 'error' = 'success';
 
+  // Variables para el modal de alerta informativa
+  alertModalVisible = false;
+  alertModalMessage = '';
+  private _pendingModalAction: (() => void) | null = null;
+
   // Alerta de docente inactivo
   showInactiveAlert: boolean = false;
 
@@ -106,6 +111,9 @@ export class PrincipalPageComponent implements OnInit {
   searchResults: Sentencia[] = [];
   totalPages = 0;
   hasMorePages = false;
+
+  // NUEVO: Variables para mostrar el estado de calificación por secciones
+  progresoCalificacion: { [numero_proceso: string]: { analisis: boolean, analisis2: boolean, evaluacion: boolean, evaluacion2: boolean } } = {};
 
   constructor(
     private afAuth: AngularFireAuth,
@@ -501,9 +509,18 @@ export class PrincipalPageComponent implements OnInit {
         }
       });
 
+      // Guardar acción antes de resetear el estado del formulario
+      const accionRealizada = this.accionPendiente;
       this.resetFormState(); // Limpiar el estado del formulario
       console.log('Proceso de actualización completado');
-      this.showNotification('Decisión guardada exitosamente.', 'success');
+
+      // Si se aceptó, mostrar modal informativo al docente
+      if (accionRealizada === 'aceptar') {
+        this.alertModalMessage = 'Se ha habilitado el acceso para que el estudiante inicie el análisis y evaluación de la sentencia. Una vez completada la información, podrá realizarse la validación correspondiente.';
+        this.alertModalVisible = true;
+      } else {
+        this.showNotification('Decisión guardada exitosamente.', 'success');
+      }
 
     } catch (error) {
       console.error('❌ Error detallado al actualizar:', error);
@@ -628,20 +645,46 @@ export class PrincipalPageComponent implements OnInit {
   }
 
   redirectToNuevaSentencia() {
-    this.router.navigate(['/nueva-sentencia']);
+    // Muestra modal informativo al estudiante antes de navegar
+    if (this.userRole === 'estudiante') {
+      this._pendingModalAction = () => this.router.navigate(['/nueva-sentencia']);
+      this.alertModalMessage = 'Recuerde anonimizar los nombres de todas las personas involucradas en la sentencia (p.ej. actor, demandado; condenado, victima; etc.) para garantizar la protección de sus datos personales, en el proceso de análisis y evaluación que realizarás a continuación.';
+      this.alertModalVisible = true;
+    } else {
+      this.router.navigate(['/nueva-sentencia']);
+    }
   }
 
   redirectToAnalisis(sentencia: Sentencia) {
-    this.router.navigate(['/analisis'], {
+    const doNav = () => this.router.navigate(['/analisis'], {
       queryParams: {
         id: sentencia.id,
         numero_proceso: sentencia.numero_proceso || 'SIN_PROCESO',
         asunto: sentencia.asunto,
         estudiante: sentencia.nombre_estudiante,
-        docente: sentencia.nombre_docente
+        docente: sentencia.nombre_docente,
+        archivoURL: sentencia.archivoURL
       }
     }).then(success => console.log('Navigation success:', success))
       .catch(err => console.error('Navigation error:', err));
+
+    // Muestra modal informativo al estudiante antes de navegar
+    if (this.userRole === 'estudiante') {
+      this._pendingModalAction = doNav;
+      this.alertModalMessage = 'Se ha iniciado el proceso de análisis y evaluación de la motivación de la sentencia. Por favor, complete todos los campos requeridos en cada sección, asegurándose de guardar los cambios para avanzar. Una vez que finalice el registro, la información quedará pendiente para que el docente realice la validación.';
+      this.alertModalVisible = true;
+    } else {
+      doNav();
+    }
+  }
+
+  /** Cierra el modal de alerta y ejecuta la acción pendiente si la hay */
+  onAlertModalClose(): void {
+    this.alertModalVisible = false;
+    if (this._pendingModalAction) {
+      this._pendingModalAction();
+      this._pendingModalAction = null;
+    }
   }
 
   onSearchTextChanged() {
@@ -764,6 +807,7 @@ export class PrincipalPageComponent implements OnInit {
     const endIndex = startIndex + this.pageSize;
     this.pagedSentencias = this.searchResults.slice(startIndex, endIndex);
     this.loadingPage = false;
+    this.checkCalificacionStatus();
   }
 
   // Método para mostrar mensajes
@@ -930,8 +974,15 @@ export class PrincipalPageComponent implements OnInit {
       await docRef.update(updateData);
       console.log('✅ Estado actualizado exitosamente');
 
+      // Guardar el estado antes de cerrar el overlay (closeEditarEstadoOverlay resetea nuevoEstado a null)
+      const estadoGuardado = this.nuevoEstado;
       this.closeEditarEstadoOverlay();
-      // this.loadUserData(this.user.uid); // Comentado para evitar recarga completa
+
+      // Si se aceptó, mostrar modal informativo al docente
+      if (estadoGuardado === 'aceptar') {
+        this.alertModalMessage = 'Se ha habilitado el acceso para que el estudiante inicie el análisis y evaluación de la motivación de la sentencia. Una vez completada la información, podrá realizarse la validación correspondiente.';
+        this.alertModalVisible = true;
+      }
 
       // Recargar SOLO las sentencias para refrescar la UI sin perder el contexto de búsqueda/filtros
       this.loadSentencias().subscribe(sentencias => {
@@ -1172,6 +1223,32 @@ export class PrincipalPageComponent implements OnInit {
 
       this.loadingPage = false;
       this.isLoading = false;
+      this.checkCalificacionStatus();
+    });
+  }
+
+  // NUEVO: Método para consultar si el docente ya guardó sus calificaciones
+  checkCalificacionStatus() {
+    this.pagedSentencias.forEach(sentencia => {
+      const np = sentencia.numero_proceso;
+      // Solo consultar si no se había consultado antes para este numero_proceso
+      if (!this.progresoCalificacion[np]) {
+        this.progresoCalificacion[np] = { analisis: false, analisis2: false, evaluacion: false, evaluacion2: false };
+        
+        const colecciones = ['analisis', 'analisis2', 'evaluacion', 'evaluacion2'];
+        
+        colecciones.forEach(col => {
+          this.firestore.collection(col).doc(np).get().subscribe(doc => {
+            if (doc.exists) {
+              const data = doc.data() as any;
+              if (data.docenteSaved) {
+                // Actualizar la propiedad específica de la sección
+                this.progresoCalificacion[np][col as keyof typeof this.progresoCalificacion[string]] = true;
+              }
+            }
+          });
+        });
+      }
     });
   }
 

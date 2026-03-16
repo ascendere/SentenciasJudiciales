@@ -20,7 +20,7 @@
     <!-- Botón Nueva Sentencia -->
     <button *ngIf="currentUserData?.role == 'estudiante' || currentUserData?.isAdmin" class="bttn-stnd"
       (click)="redirectToNuevaSentencia()">
-      Nueva Sentencia
+      Nuevo Análisis <br> de Sentencia
     </button>
 
     <!-- BARRA DE HERRAMIENTAS DE ADMIN -->
@@ -280,6 +280,17 @@
           <div class="text-dat" *ngIf="sentencia.isLocked" style="color: red; font-weight: bold; margin-top: 5px;">
             <i class="fa-solid fa-lock"></i> SENTENCIA BLOQUEADA
           </div>
+          
+          <!-- NUEVO: Barra de progreso de calificación -->
+          <div class="progress-wrapper" *ngIf="progresoCalificacion[sentencia.numero_proceso]">
+            <span class="progress-title">Progreso de validación:</span>
+            <div class="progress-bar-container">
+              <div class="progress-segment" [class.completed]="progresoCalificacion[sentencia.numero_proceso].analisis" title="Esquema de las argumentaciones de la sentencia"></div>
+              <div class="progress-segment" [class.completed]="progresoCalificacion[sentencia.numero_proceso].analisis2" title="Análisis de las argumentaciones de la sentencia"></div>
+              <div class="progress-segment" [class.completed]="progresoCalificacion[sentencia.numero_proceso].evaluacion" title="Cuestionarios de estándar de suficiencia de la motivación"></div>
+              <div class="progress-segment" [class.completed]="progresoCalificacion[sentencia.numero_proceso].evaluacion2" title="Cuestionario de estándar de la motivación correcta"></div>
+            </div>
+          </div>
         </div>
 
         <div class="more">
@@ -288,16 +299,20 @@
              1. Nombre: "Abrir Sentencia"
              2. Condición: Disabled si el estado NO es 'aceptar'.
           -->
+
+          <!-- PDF: Visible para el estudiante si tiene archivoURL -->
+          <a *ngIf="(currentUserData?.role === 'docente' || currentUserData?.isAdmin) && sentenciaPendiente?.archivoURL"
+            [href]="sentenciaPendiente?.archivoURL" target="_blank" class="bttn-view" style="width: 90%; justify-content: center;">
+            <i class="fa-solid fa-file-pdf"></i> Ver sentencia
+          </a>
+
           <button class="bttn-stnd" (click)="redirectToAnalisis(sentencia)"
             [disabled]="sentencia?.estado !== 'aceptar'">
-            Abrir Sentencia
+            Análisis y evaluación <br>de la motivación
           </button>
 
-          <!-- PDF: DOCENTE Y ADMIN (Visible para ambos) -->
-          <a *ngIf="(currentUserData?.role === 'docente' || currentUserData?.isAdmin) && sentencia.archivoURL"
-            [href]="sentencia.archivoURL" target="_blank" class="bttn-download">
-            Descargar PDF
-          </a>
+
+
         </div>
 
         <!-- NUEVO: BOTÓN DESBLOQUEAR (Solo Admin/Docente Admin) -->
@@ -315,8 +330,10 @@
             <ng-container *ngIf="!sentencia.estado">
               <ng-container *ngIf="!sentencia.isLockedForAcceptance; else lockedButtons">
                 <!-- BOTONES ACEPTAR/NEGAR -->
-                <button (click)="abrirRazon(sentencia, 'aceptar')" class="bttn-accept">Aceptar</button>
-                <button (click)="abrirRazon(sentencia, 'negar')" class="bttn-reject">Negar</button>
+                <button *ngIf="currentUserData?.isAdmin || currentUserData?.role === 'docente'"
+                  (click)="abrirEdicionEstado(sentencia)" class="bttn-edit">
+                  Revisar Sentencia
+                </button> 
               </ng-container>
               <ng-template #lockedButtons>
                 <div class="locked-btns">
@@ -327,7 +344,7 @@
 
             <button *ngIf="sentencia.estado && (currentUserData?.isAdmin || currentUserData?.role === 'docente')"
               (click)="abrirEdicionEstado(sentencia)" class="bttn-edit">
-              Editar estado
+              Revisar Sentencia
             </button>
           </div>
 
@@ -350,6 +367,13 @@
       <!-- Overlays -->
       <div class="overlay" *ngIf="showRazonOverlay">
         <div class="overlay-content">
+          <!-- PDF: DOCENTE Y ADMIN (Visible para ambos en el overlay) -->
+          <div style="display: flex; justify-content: center; margin-top: 15px;">
+            <a *ngIf="(currentUserData?.role === 'docente' || currentUserData?.isAdmin) && sentenciaPendiente?.archivoURL"
+              [href]="sentenciaPendiente?.archivoURL" target="_blank" class="bttn-view">
+              <i class="fa-solid fa-file-pdf"></i> Ver sentencia
+            </a>
+          </div>
           <h3>Razón para {{ accionPendiente }}</h3>
           <textarea [(ngModel)]="razonTexto"></textarea>
           <div class="overlay-buttons">
@@ -359,22 +383,47 @@
         </div>
       </div>
 
-      <div class="overlay" *ngIf="showEditarEstadoOverlay">
-        <div class="overlay-content">
-          <h3>Editar estado</h3>
-          <div class="estado-options">
-            <button [class.selected]="nuevoEstado === 'aceptar'" (click)="nuevoEstado = 'aceptar'" class="bttn-accept">
-              Aceptar
-            </button>
-            <button [class.selected]="nuevoEstado === 'negar'" (click)="nuevoEstado = 'negar'" class="bttn-reject">
-              Negar
-            </button>
+      <div class="overlay2" *ngIf="showEditarEstadoOverlay">
+        <div class="overlay-content2">
+
+          <div class="overlay-header2">
+            <h3>Editar estado</h3>
+            <button class="bttn-close-modal2" (click)="cancelarEdicionEstado()">✕</button>
           </div>
-          <textarea [(ngModel)]="razonTexto" placeholder="Ingrese la nueva razón..." class="razon-textarea">
-          </textarea>
-          <div class="overlay-buttons">
-            <button (click)="guardarEdicionEstado()">Guardar</button>
-            <button (click)="cancelarEdicionEstado()">Cancelar</button>
+
+          <div class="overlay-body2">
+
+            <a *ngIf="(currentUserData?.role === 'docente' || currentUserData?.isAdmin) && sentenciaEditar?.archivoURL"
+              [href]="sentenciaEditar?.archivoURL" target="_blank" class="bttn-view">
+              <i class="fa-solid fa-file-pdf"></i> Ver sentencia
+            </a>
+
+            <div>
+              <p class="overlay-label2">Selecciona un estado</p>
+              <div class="estado-options2">
+                <button [class.selected]="nuevoEstado === 'aceptar'"
+                        (click)="nuevoEstado = 'aceptar'" class="bttn-accept2">
+                  <i class="fa-solid fa-check"></i> Aceptar
+                </button>
+                <button [class.selected]="nuevoEstado === 'negar'"
+                        (click)="nuevoEstado = 'negar'" class="bttn-reject2">
+                  <i class="fa-solid fa-xmark"></i> Negar
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <p class="overlay-label2">Razón</p>
+              <textarea [(ngModel)]="razonTexto"
+                        placeholder="Ingrese la nueva razón..."
+                        class="razon-textarea2"></textarea>
+            </div>
+
+            <div class="overlay-buttons2">
+              <button (click)="cancelarEdicionEstado()">Cancelar</button>
+              <button (click)="guardarEdicionEstado()">Guardar cambios</button>
+            </div>
+
           </div>
         </div>
       </div>
@@ -406,6 +455,13 @@
           <div class="bttn-close">
             <button (click)="closeOverlay()" class="bttn-stnd">Cerrar</button>
           </div>
+          <!-- PDF: Visible para el estudiante si tiene archivoURL -->
+          <div style="display: flex; justify-content: center; margin-top: 15px;">
+            <a *ngIf="selectedSentencia?.archivoURL" [href]="selectedSentencia?.archivoURL" target="_blank"
+              class="bttn-view">
+              <i class="fa-solid fa-file-pdf"></i> Ver sentencia
+            </a>
+          </div>
         </div>
       </div>
 
@@ -420,3 +476,9 @@
 
   </div>
 </div>
+<!-- Modal de alerta informativa -->
+<app-alert-modal
+  [message]="alertModalMessage"
+  [visible]="alertModalVisible"
+  (closeModal)="onAlertModalClose()">
+</app-alert-modal>

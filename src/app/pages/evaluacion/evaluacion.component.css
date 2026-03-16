@@ -87,4 +87,115 @@
     background: #000000;
   }
 
+.bttn-download {
+  background: none;
+  border: none;
+  border-bottom: solid 1px #172D5A;
+  font-family: Poppins;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 600;
+  color: #172D5A;
+  margin-top: 10px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.locked-message {
+  color: #711d1d;
+  font-family: Poppins;
+  font-size: 14px;
+  font-weight: 500;
+  background-color: #faf8f8;
+  padding: 10px;
+  border-radius: 8px;
+  display: inline-block;
+  margin-bottom: 5px;
+}
+
+.bttn-view {
+  background-color: #172D5A;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-family: Poppins;
+  font-weight: bold;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bttn-view:hover {
+  background-color: #1a2a4d;
+}
+
+/* Progress Bar Styles - Premium Sticky Design */
+.progress-sticky-container {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 15px 40px;
+  border-bottom: 1px solid rgba(23, 45, 90, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  margin-bottom: 25px;
+  transition: all 0.3s ease;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.progress-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #172D5A;
+  letter-spacing: 0.5px;
+}
+
+.progress-label {
+  background: #172D5A;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 2px 5px rgba(23, 45, 90, 0.2);
+}
+
+.progress-bar-bg {
+  width: 100%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  height: 10px;
+  background: #e9ecef;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(23, 45, 90, 0.05);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #172D5A 0%, #004274 50%, #1D9E75 100%);
+  border-radius: 10px;
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 15px rgba(23, 45, 90, 0.2);
+}
+
+
   

@@ -47,6 +47,7 @@ export class Analisis2Component implements OnInit {
   docenteSaved = false;
   dataLoaded = false;
   isDocente = false;
+  archivoURL: string = '';
 
   // Usamos UserData importado y añadimos currentUserData
   currentUser: Observable<UserData | null | undefined> = of(null);
@@ -59,7 +60,12 @@ export class Analisis2Component implements OnInit {
   mostrarMensaje: boolean = false;
   mensajeError: string = '';
   mostrarRetroalimentacion: { [key: string]: boolean } = {};
-  private isSubmitting = false
+  private isSubmitting = false;
+
+  // Variables para el modal de confirmación de campos vacíos
+  alertModalMessage = '';
+  confirmModalVisible = false;
+  private _pendingGuardar: (() => void) | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -102,6 +108,7 @@ export class Analisis2Component implements OnInit {
       this.asunto = params.get('asunto') || '';
       this.estudiante = params.get('estudiante') || '';
       this.docente = params.get('docente') || '';
+      this.archivoURL = params.get('archivoURL') || '';
 
       this.analisis2Form.patchValue({
         numero_proceso: this.numero_proceso
@@ -210,9 +217,9 @@ export class Analisis2Component implements OnInit {
    * Guarda los datos de la sección 2 del análisis.
    * Actualiza flags de 'saved' y maneja la recarga de página tras guardar.
    */
-  submitForm() {
+  submitForm(redirecting: boolean = false, fromGuardarYContinuar: boolean = false) {
     this.analisis2Form.patchValue({ saved: true });
-    if (this.isDocente) {
+    if (this.isDocente && fromGuardarYContinuar) {
       this.analisis2Form.patchValue({ docenteSaved: true });
     }
     const analisisData = this.analisis2Form.value;
@@ -232,9 +239,16 @@ export class Analisis2Component implements OnInit {
         this.saved = true;
         this.cargando = false;
         this.mostrarMensajeExito('Guardado con éxito');
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
+        // CAMBIO CLAVE: Solo recarga si NO vamos a redirigir
+        if (!redirecting) {
+          setTimeout(() => {
+            this.isSubmitting = false;
+            window.location.reload();
+          }, 1000);
+        } else {
+          // Si estamos redirigiendo, no recargamos, solo quitamos el estado de submit
+          this.isSubmitting = false;
+        }
       })
       .catch(error => {
         // console.error("Error saving document: ", error);
@@ -263,14 +277,18 @@ export class Analisis2Component implements OnInit {
   }
 
   redirectToAnalisis() {
-    this.router.navigate(['/analisis'], {
-      queryParams: {
-        numero_proceso: this.numero_proceso,
-        asunto: this.asunto,
-        estudiante: this.estudiante,
-        docente: this.docente
-      }
-    });
+    this.submitForm(true, false);
+    setTimeout(() => {
+      this.router.navigate(['/analisis'], {
+        queryParams: {
+          numero_proceso: this.numero_proceso,
+          asunto: this.asunto,
+          estudiante: this.estudiante,
+          docente: this.docente,
+          archivoURL: this.archivoURL
+        }
+      });
+    }, 1500);
   }
 
   redirectToEvaluacion(event: Event) {
@@ -281,7 +299,8 @@ export class Analisis2Component implements OnInit {
         numero_proceso: this.numero_proceso,
         asunto: this.asunto,
         estudiante: this.estudiante,
-        docente: this.docente
+        docente: this.docente,
+        archivoURL: this.archivoURL
       }
     });
   }
@@ -289,22 +308,79 @@ export class Analisis2Component implements OnInit {
   guardarYContinuar(event: Event) {
     event.preventDefault();
 
-    // Quitar validaciones estrictas temporalmente
-    // Primero guardar
-    this.submitForm();
+    const doGuardar = () => {
+      this.submitForm(true, true);
+      setTimeout(() => {
+        this.router.navigate(['/evaluacion'], {
+          queryParams: {
+            numero_proceso: this.numero_proceso,
+            asunto: this.asunto,
+            estudiante: this.estudiante,
+            docente: this.docente,
+            archivoURL: this.archivoURL
+          }
+        });
+      }, 1500);
+    };
 
-    // Luego navegar después de un breve delay para asegurar que se guarde
-    setTimeout(() => {
-      this.router.navigate(['/evaluacion'], {
-        queryParams: {
-          numero_proceso: this.numero_proceso,
-          asunto: this.asunto,
-          estudiante: this.estudiante,
-          docente: this.docente
-        }
-      });
-    }, 1500);
+    if (this.tieneCamposVacios() && !this.isDocente) {
+      this._pendingGuardar = doGuardar;
+      this.alertModalMessage = 'Tiene campos vacíos, complételos para avanzar.';
+      this.confirmModalVisible = true;
+    } else if (this.isDocente && this.tieneValidacionesPendientesDocente()) {
+      this.alertModalMessage = 'Por favor, califique todas las preguntas antes de continuar.';
+      this.confirmModalVisible = true;
+    } else {
+      doGuardar();
+    }
   }
+
+  /** Devuelve true si el docente tiene validaciones pendientes */
+  tieneValidacionesPendientesDocente(): boolean {
+    const values = this.analisis2Form.getRawValue();
+    const sections = [
+      'narracion_hechos', 'problema_juridico', 'cuestiones_subcuestiones',
+      'respuesta_cuestiones', 'ratio_obiter', 'solucion_problema', 'decision'
+    ];
+
+    return sections.some(section => {
+      const calificacion = values[`${section}_calificacion`];
+      return !calificacion || calificacion === 'No Calificado' || calificacion === 'No calificado';
+    });
+  }
+
+  /** Devuelve true si alguno de los campos del estudiante está vacío */
+  tieneCamposVacios(): boolean {
+    const values = this.analisis2Form.getRawValue();
+    return this.hayVaciosEnValor(values, '');
+  }
+
+  /** Verifica recursivamente si hay valores vacíos, ignorando campos de docente */
+  private hayVaciosEnValor(val: any, key: string): boolean {
+    const ignorar = ['calificacion', 'retroalimentacion', 'saved', 'docenteSaved', 'timestamp', 'numero_proceso'];
+    if (ignorar.some(k => key.toLowerCase().includes(k))) return false;
+    if (val === null || val === undefined || val === '') return true;
+    if (typeof val === 'boolean') return false;
+    if (Array.isArray(val)) return val.length === 0 || val.some((v: any) => this.hayVaciosEnValor(v, key));
+    if (typeof val === 'object') return Object.entries(val).some(([k, v]) => this.hayVaciosEnValor(v, k));
+    return false;
+  }
+
+  /** El usuario confirmó continuar con campos vacíos */
+  onConfirmContinuar(): void {
+    this.confirmModalVisible = false;
+    if (this._pendingGuardar) {
+      this._pendingGuardar();
+      this._pendingGuardar = null;
+    }
+  }
+
+  /** El usuario canceló, cerrar modal */
+  onCancelConfirm(): void {
+    this.confirmModalVisible = false;
+    this._pendingGuardar = null;
+  }
+
 
   checkDocenteSaved() {
     this.firestore.collection('analisis2').doc(this.numero_proceso).valueChanges()
@@ -326,7 +402,10 @@ export class Analisis2Component implements OnInit {
 
   getCalificacionValue(controlName: string): string {
     const control = this.analisis2Form.get(controlName);
-    return control && control.value ? control.value : 'No Calificado';
+    const value = control?.value;
+    // Traduce 'No Calificado' a 'Sin validar' solo para visualización
+    if (!value || value === 'No Calificado' || value === 'No calificado') return 'Pendiente de validar';
+    return value;
   }
 
 }

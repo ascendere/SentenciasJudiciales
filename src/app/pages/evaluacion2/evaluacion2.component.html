@@ -5,11 +5,16 @@
     <p class="dat"><strong> ASUNTO: </strong> {{ asunto }}</p>
     <p class="dat"><strong> ESTUDIANTE: </strong> {{ estudiante }} </p>
     <p class="dat"><strong> DOCENTE: </strong> {{ docente }}</p>
+    <div *ngIf="archivoURL" style="margin: 10px 30px; display: flex; justify-content: center; align-items: center; gap: 10px;">
+        <a [href]="archivoURL" target="_blank" class="bttn-view">
+            <i class="fa-solid fa-file-pdf"></i> Ver Sentencia
+        </a>
+    </div>
 </div>
 
 <form [formGroup]="evaluacion2Form" (ngSubmit)="submitForm()">
 
-    <h3 class="titulo-analisis">Cuestionario de estandar de la motivación correcta</h3>
+    <h3 class="titulo-analisis">Cuestionario de estándar de la motivación correcta</h3>
     <div *ngIf="evaluacion2Form.disabled" class="locked-message">
         Esta sentencia está bloqueada y no puede ser editada.
     </div>
@@ -165,33 +170,43 @@
                 <div class="calificacion-display" *ngIf="!saved" [ngClass]="{
                     'calificacion-correcta': getCalificacionValue('sentenceSubject_calificacion') === 'Correcto',
                     'calificacion-incorrecta': getCalificacionValue('sentenceSubject_calificacion') === 'Incorrecto',
-                    'calificacion-no-calificado': getCalificacionValue('sentenceSubject_calificacion') === 'No Calificado'
+                    'calificacion-no-calificado': getCalificacionValue('sentenceSubject_calificacion') === 'Pendiente de validar'
                   }">
                     {{ getCalificacionValue('sentenceSubject_calificacion') }}
                 </div>
             </div>
-
-            <button class="rate" *ngIf="isDocente" type="button" (click)="toggleCalificar('sentenceSubject')">Calificar
-                *</button>
-            <div *ngIf="calificarState['sentenceSubject']">
+            <div *ngIf="!isDocente && evaluacion2Form.get('sentenceSubject_retroalimentacion')?.value">
+                <button type="button" (click)="toggleRetroalimentacion('sentenceSubject')" class="bttn-toggle">
+                    {{ mostrarRetroalimentacion['sentenceSubject'] ? 'Ocultar' : 'Ver' }} justificación
+                </button>
+                <div *ngIf="mostrarRetroalimentacion['sentenceSubject']" class="retroalimentacion-contenido">
+                    <div class="retroalimentacion-texto">
+                        {{ evaluacion2Form.get('sentenceSubject_retroalimentacion')?.value }}
+                    </div>
+                </div>
+            </div>
+            @if (isDocente) {
                 <div class="bttns-rate">
                     <button class="correct-button" type="button"
                         [class.calificacion-correcta]="isButtonSelected('sentenceSubject_calificacion', 'Correcto')"
                         (click)="setCalificacion('sentenceSubject_calificacion', 'Correcto')">
-                        Correcto
+                        Validar
                     </button>
                     <button class="incorrect-button" type="button"
                         [class.calificacion-incorrecta]="isButtonSelected('sentenceSubject_calificacion', 'Incorrecto')"
                         (click)="setCalificacion('sentenceSubject_calificacion', 'Incorrecto')">
-                        Incorrecto
+                        No validar
                     </button>
                 </div>
-                <div>
+                @if (isButtonSelected('sentenceSubject_calificacion', 'Incorrecto')) {
+                  <div>
                     <app-caja-texto [formControlName]="'sentenceSubject_retroalimentacion'"
-                        [disabled]="evaluacion2Form.disabled" [titulo]="'Retroalimentación *'"></app-caja-texto>
-                </div>
-            </div>
+                        [disabled]="evaluacion2Form.disabled" [titulo]="'Justifique... *'"></app-caja-texto>
+                  </div>
+                }
+            }
         </div>
+        <div style="margin-top: 24px;"></div>
         <div class="checkbox-class">
             <h2 class="tittle-check">SEÑALE EL CASILLERO QUE CREA CONVENIENTE</h2>
             <h5 class="description">En este apartado encontrará una serie de parámetros, para seleccionar según su
@@ -224,46 +239,45 @@
                                 [ngClass]="{
                                 'calificacion-correcta': getCalificacionValue('section' + sectionIndex + '_calificacion') === 'Correcto',
                                 'calificacion-incorrecta': getCalificacionValue('section' + sectionIndex + '_calificacion') === 'Incorrecto',
-                                'calificacion-no-calificado': getCalificacionValue('section' + sectionIndex + '_calificacion') === 'No Calificado',}">
+                                'calificacion-no-calificado': getCalificacionValue('section' + sectionIndex + '_calificacion') === 'Pendiente de validar',}">
                                 {{ getCalificacionValue('section' + sectionIndex + '_calificacion') }}
                             </div>
                         </div>
-                        <button type="button" (click)="toggleRetroalimentacion(section.id)" class="bttn-toggle">
-                            {{ mostrarRetroalimentacion[section.id] ? 'Ocultar' : 'Ver' }} retroalimentación
-                        </button>
-                        <div class="retroalimentacion-contenido" *ngIf="mostrarRetroalimentacion[section.id]">
-                            <p> {{ getRetroalimentacionValue('section' + sectionIndex
-                                + '_retroalimentacion') }}</p>
+                        <div *ngIf="getCalificacionValue('section' + sectionIndex + '_calificacion') === 'Incorrecto'">
+                            <button type="button" (click)="toggleRetroalimentacion(section.id)" class="bttn-toggle">
+                                {{ mostrarRetroalimentacion[section.id] ? 'Ocultar' : 'Ver' }} justificación
+                            </button>
+                            <div class="retroalimentacion-contenido" *ngIf="mostrarRetroalimentacion[section.id]">
+                                <p> {{ getRetroalimentacionValue('section' + sectionIndex
+                                    + '_retroalimentacion') }}</p>
+                            </div>
                         </div>
                     </div>
                 </ng-container>
                 <!-- Boton de calificar y opcion de retroalimentacion que da el docente -->
                 <ng-container *ngIf="isDocente">
-                    <button class="rate" type="button" (click)="toggleCalificar2('section' + sectionIndex)">
-                        Calificar *
-                    </button>
-                    <div *ngIf="calificarState['section' + sectionIndex]">
                         <div class="bttns-rate">
                             <button class="correct-button"
                                 [class.calificacion-correcta]="isButtonSelected2('section' + sectionIndex + '_calificacion', 'Correcto')"
                                 type="button"
                                 (click)="setCalificacion2('section' + sectionIndex + '_calificacion', 'Correcto')">
-                                Correcto
+                                Validar
                             </button>
 
                             <button class="incorrect-button"
                                 [class.calificacion-incorrecta]="isButtonSelected2('section' + sectionIndex + '_calificacion', 'Incorrecto')"
                                 type="button"
                                 (click)="setCalificacion2('section' + sectionIndex + '_calificacion', 'Incorrecto')">
-                                Incorrecto
+                                No validar
                             </button>
                         </div>
-                        <div>
+                        @if (isButtonSelected2('section' + sectionIndex + '_calificacion', 'Incorrecto')) {
+                          <div>
                             <app-caja-texto [formControlName]="'section' + sectionIndex + '_retroalimentacion'"
-                                [disabled]="evaluacion2Form.disabled" [titulo]="'Retroalimentación *'">
+                                [disabled]="evaluacion2Form.disabled" [titulo]="'Justifique... *'">
                             </app-caja-texto>
-                        </div>
-                    </div>
+                          </div>
+                        }
                 </ng-container>
             </div>
             <!-- Fundamentación normativa formulario del estudiante -->
@@ -283,42 +297,42 @@
                         [titulo]="'Justifique su respuesta (500 palabras) *'">
                     </app-caja-texto>
                     <!-- Vista de la retroalimentacion del estudiante -->
-                    <div *ngIf="!isDocente && getRetroalimentacionValue('reasonsNormative_retroalimentacion')">
-                        <button type="button" (click)="toggleRetroalimentacion('sentenceSubject')" class="bttn-toggle">
-                            {{ mostrarRetroalimentacion['sentenceSubject'] ? 'Ocultar' : 'Ver' }} retroalimentación
+                    <div *ngIf="!isDocente && evaluacion2Form.get('reasonsNormative_retroalimentacion')?.value">
+                        <button type="button" (click)="toggleRetroalimentacion('reasonsNormative')" class="bttn-toggle">
+                            {{ mostrarRetroalimentacion['reasonsNormative'] ? 'Ocultar' : 'Ver' }} justificación
                         </button>
-                        <div *ngIf="mostrarRetroalimentacion['sentenceSubject']" class="retroalimentacion-contenido">
+                        <div *ngIf="mostrarRetroalimentacion['reasonsNormative']" class="retroalimentacion-contenido">
                             <div class="retroalimentacion-texto">
-                                {{ getRetroalimentacionValue('reasonsNormative_retroalimentacion') }}
+                                {{ evaluacion2Form.get('reasonsNormative_retroalimentacion')?.value }}
                             </div>
                         </div>
                     </div>
                 </div>
                 <!-- Opcion de calificar y retroalimentacion que da el docente -->
-                <button class="rate" *ngIf="isDocente" type="button"
-                    (click)="toggleCalificar('reasonsNormative')">Calificar *</button>
-                <div *ngIf="calificarState['reasonsNormative']">
+                    @if (isDocente) {
                     <div class="bttns-rate">
                         <button class="correct-button"
                             [class.calificacion-correcta]="isButtonSelected('reasonsNormative_calificacion', 'Correcto')"
                             type="button"
-                            (click)="setCalificacion('reasonsNormative_calificacion', 'Correcto')">Correcto</button>
+                            (click)="setCalificacion('reasonsNormative_calificacion', 'Correcto')">Validar</button>
                         <button class="incorrect-button"
                             [class.calificacion-incorrecta]="isButtonSelected('reasonsNormative_calificacion', 'Incorrecto')"
                             type="button"
-                            (click)="setCalificacion('reasonsNormative_calificacion', 'Incorrecto')">Incorrecto</button>
+                            (click)="setCalificacion('reasonsNormative_calificacion', 'Incorrecto')">No validar</button>
                     </div>
-                    <div>
+                    @if (isButtonSelected('reasonsNormative_calificacion', 'Incorrecto')) {
+                      <div>
                         <app-caja-texto [formControlName]="'reasonsNormative_retroalimentacion'"
-                            [disabled]="evaluacion2Form.disabled" [titulo]="'Retroalimentación'"></app-caja-texto>
-                    </div>
-                </div>
+                            [disabled]="evaluacion2Form.disabled" [titulo]="'Justifique... *'"></app-caja-texto>
+                      </div>
+                    }
+                    }
                 <!-- Vista de la calificacion del estudiante -->
                 <div *ngIf="!isDocente && evaluacion2Form.get('saved')?.value" class="calificaciones">
                     <div class="calificacion-display" *ngIf="!saved" [ngClass]="{
                             'calificacion-correcta': getCalificacionValue('reasonsNormative_calificacion') === 'Correcto',
                             'calificacion-incorrecta': getCalificacionValue('reasonsNormative_calificacion') === 'Incorrecto',
-                            'calificacion-no-calificado': getCalificacionValue('reasonsNormative_calificacion') === 'No Calificado'
+                            'calificacion-no-calificado': getCalificacionValue('reasonsNormative_calificacion') === 'Pendiente de validar'
                           }">
                         {{ getCalificacionValue('reasonsNormative_calificacion') }}
                     </div>
@@ -330,40 +344,40 @@
                     <app-caja-texto name="finalConclusion" formControlName="finalConclusion"
                         [titulo]="'Resultados y Discusión *'">
                     </app-caja-texto>
-                    <div *ngIf="!isDocente && getRetroalimentacionValue('finalConclusion_retroalimentacion')">
-                        <button type="button" (click)="toggleRetroalimentacion('sentenceSubject')" class="bttn-toggle">
-                            {{ mostrarRetroalimentacion['sentenceSubject'] ? 'Ocultar' : 'Ver' }} retroalimentación
+                    <div *ngIf="!isDocente && evaluacion2Form.get('finalConclusion_retroalimentacion')?.value">
+                        <button type="button" (click)="toggleRetroalimentacion('finalConclusion')" class="bttn-toggle">
+                            {{ mostrarRetroalimentacion['finalConclusion'] ? 'Ocultar' : 'Ver' }} justificación
                         </button>
-                        <div *ngIf="mostrarRetroalimentacion['sentenceSubject']" class="retroalimentacion-contenido">
+                        <div *ngIf="mostrarRetroalimentacion['finalConclusion']" class="retroalimentacion-contenido">
                             <div class="retroalimentacion-texto">
-                                {{ getRetroalimentacionValue('finalConclusion_retroalimentacion') }}
+                                {{ evaluacion2Form.get('finalConclusion_retroalimentacion')?.value }}
                             </div>
                         </div>
                     </div>
                 </div>
-                <button class="rate" *ngIf="isDocente" type="button"
-                    (click)="toggleCalificar('finalConclusion')">Calificar *</button>
-                <div *ngIf="calificarState['finalConclusion']">
+                    @if (isDocente) {
                     <div class="bttns-rate">
                         <button class="correct-button"
                             [class.calificacion-correcta]="isButtonSelected('finalConclusion_calificacion', 'Correcto')"
                             type="button"
-                            (click)="setCalificacion('finalConclusion_calificacion', 'Correcto')">Correcto</button>
+                            (click)="setCalificacion('finalConclusion_calificacion', 'Correcto')">Validar</button>
                         <button class="incorrect-button"
                             [class.calificacion-incorrecta]="isButtonSelected('finalConclusion_calificacion', 'Incorrecto')"
                             type="button"
-                            (click)="setCalificacion('finalConclusion_calificacion', 'Incorrecto')">Incorrecto</button>
+                            (click)="setCalificacion('finalConclusion_calificacion', 'Incorrecto')">No validar</button>
                     </div>
-                    <div>
+                    @if (isButtonSelected('finalConclusion_calificacion', 'Incorrecto')) {
+                      <div>
                         <app-caja-texto [formControlName]="'finalConclusion_retroalimentacion'"
-                            [disabled]="evaluacion2Form.disabled" [titulo]="'Retroalimentación *'"></app-caja-texto>
-                    </div>
-                </div>
+                            [disabled]="evaluacion2Form.disabled" [titulo]="'Justifique... *'"></app-caja-texto>
+                      </div>
+                    }
+                    }
                 <div *ngIf="!isDocente && evaluacion2Form.get('saved')?.value" class="calificaciones">
                     <div class="calificacion-display" *ngIf="!saved" [ngClass]="{
                             'calificacion-correcta': getCalificacionValue('finalConclusion_calificacion') === 'Correcto',
                             'calificacion-incorrecta': getCalificacionValue('finalConclusion_calificacion') === 'Incorrecto',
-                            'calificacion-no-calificado': getCalificacionValue('finalConclusion_calificacion') === 'No Calificado'
+                            'calificacion-no-calificado': getCalificacionValue('finalConclusion_calificacion') === 'Pendiente de validar'
                           }">
                         {{ getCalificacionValue('finalConclusion_calificacion') }}
                     </div>
@@ -373,7 +387,7 @@
     </div>
 
     <!-- BOTÓN DE GUARDAR (Solo si no está bloqueado) -->
-    <button *ngIf="!isFormLocked" class="bttn-stnd-g" type="submit">Guardar</button>
+    <!-- <button *ngIf="!isFormLocked" class="bttn-stnd-g" type="submit">Guardar</button> -->
 </form>
 
 <div *ngIf="mostrarMensaje" class="alerta">
@@ -385,29 +399,54 @@
 </div>
 
 <!-- SECCIÓN DE BOTONES DE ACCIÓN -->
-<div class="bttn">
-    <button class="bttn-stnd" (click)="redirectToEvaluacion()">Anterior</button>
+<div class="bttn-container" style="display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 20px;">
+    
+    <div *ngIf="isDocente" class="locked-message" style="width: 100%; text-align: center;">
+      <i class="fa-solid fa-circle-info"></i> Una vez bloqueado el análisis de la sentencia, el estudiante no podrá realizar modificaciones. Si se requiere una edición posterior, esta deberá ser habilitada exclusivamente por el docente, con el mismo botón.
+    </div>
+    <!-- <div *ngIf="!isDocente" class="locked-message" style="width: 100%; text-align: center;">
+      <i class="fa-solid fa-circle-info"></i> El botón anterior no guardará los cambios.
+    </div> -->
 
-    <!-- Loader -->
-    <button class="custom-button" type="button" *ngIf="cargando">
-        <div class="spinner"></div>
-        <span class="button-text">Cargando...</span>
-    </button>
+    <div class="bttn" style="width: 97%;">
+        <button class="bttn-stnd" (click)="redirectToEvaluacion()">Guardar y volver</button>
 
-    <!-- BOTONES DE BLOQUEO / DESBLOQUEO (Solo Docentes/Admins) -->
-    <ng-container *ngIf="isDocente">
-        <!-- Si NO está bloqueada -> Mostrar Bloquear -->
-        <button *ngIf="!isFormLocked" class="bttn-stnd" style="background-color: #172D5A;"
-            (click)="bloquearSentencia()">
-            <i class="fa-solid fa-lock"></i> Bloquear y Finalizar
+        <!-- Loader -->
+        <button class="custom-button" type="button" *ngIf="cargando">
+            <div class="spinner"></div>
+            <span class="button-text">Cargando...</span>
         </button>
 
-        <!-- Si ESTÁ bloqueada -> Mostrar Desbloquear -->
-        <button *ngIf="isFormLocked" class="bttn-stnd" style="background-color: #d32f2f;"
-            (click)="desbloquearSentencia()">
-            <i class="fa-solid fa-lock-open"></i> Desbloquear Sentencia
-        </button>
-    </ng-container>
+        <!-- BOTONES DE BLOQUEO / DESBLOQUEO (Solo Docentes/Admins) -->
+        <ng-container *ngIf="isDocente">
+            <!-- Si NO está bloqueada -> Mostrar Bloquear -->
+            <button *ngIf="!isFormLocked" class="bttn-stnd" style="background-color: #172D5A;"
+                (click)="bloquearSentencia()">
+                <i class="fa-solid fa-lock"></i> Bloquear
+            </button>
 
-    <button class="bttn-stnd" (click)="finalizarEvaluacion()">Salir</button>
+            <!-- Si ESTÁ bloqueada -> Mostrar Desbloquear -->
+            <button *ngIf="isFormLocked" class="bttn-stnd" style="background-color: #d32f2f;"
+                (click)="desbloquearSentencia()">
+                <i class="fa-solid fa-lock-open"></i> Desbloquear Sentencia
+            </button>
+        </ng-container>
+
+        <button class="bttn-stnd" (click)="guardarYFinalizar($event)">Guardar y finalizar</button>
+    </div>
 </div>
+<!-- Modal de alerta informativa -->
+<app-alert-modal
+  [message]="alertModalMessage"
+  [visible]="alertModalVisible"
+  (closeModal)="onAlertModalClose()">
+</app-alert-modal>
+
+<!-- Modal de confirmacion cuando hay campos vacios o pendientes -->
+<app-alert-modal
+  [message]="alertModalMessage"
+  [visible]="confirmModalVisible"
+  [isConfirm]="!isDocente"
+  (closeModal)="onCancelConfirm()"
+  (confirm)="onConfirmContinuar()">
+</app-alert-modal>

@@ -102,6 +102,13 @@
   </form>
 </div>
 
+<!-- Modal de alerta informativa -->
+<app-alert-modal
+  [message]="alertModalMessage"
+  [visible]="alertModalVisible"
+  (closeModal)="onAlertModalClose()">
+</app-alert-modal>
+
 <script>
   document.getElementById('cargar-archivo-label').addEventListener('click', function () {
     document.getElementById('archivo').click();

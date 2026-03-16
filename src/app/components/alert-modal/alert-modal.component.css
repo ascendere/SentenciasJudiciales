@@ -1,0 +1,95 @@
+/* Fondo oscuro sobre toda la pantalla */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+/* Caja central del modal */
+.modal-box {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 40px 36px 32px;
+  max-width: 480px;
+  width: 90%;
+  z-index: 1001;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  text-align: center;
+  animation: fadeInScale 0.2s ease-out;
+}
+
+/* Icono informativo */
+.modal-icon {
+  font-size: 40px;
+  color: #172D5A;
+  margin-bottom: 16px;
+}
+
+/* Texto del mensaje */
+.modal-message {
+  font-family: Poppins, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  color: #333333;
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
+
+/* Botón Ok */
+.modal-btn {
+  background-color: #172D5A;
+  color: #ffffff;
+  font-family: Poppins, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 40px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.modal-btn:hover,
+.modal-btn:focus-visible {
+  background-color: #0f1f3e;
+  outline: 3px solid #FFAB02;
+  outline-offset: 2px;
+}
+
+/* Animación de entrada */
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Fila de botones en modo confirmación */
+.modal-btn-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+/* Botón secundario (No) */
+.modal-btn--secondary {
+  background-color: transparent;
+  color: #172D5A;
+  border: 2px solid #172D5A;
+}
+
+.modal-btn--secondary:hover,
+.modal-btn--secondary:focus-visible {
+  background-color: #f0f4ff;
+  outline: 3px solid #FFAB02;
+  outline-offset: 2px;
+}

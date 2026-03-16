@@ -23,24 +23,29 @@ export class AnalisisComponent implements OnInit {
   // docenteSaved = false;
   dataLoaded = false;
   isDocente = false;
+  archivoURL: string = '';
 
   // Usamos UserData importado y añadimos currentUserData
   currentUser: Observable<UserData | null | undefined> = of(null);
   currentUserData: UserData | null = null;
 
   selectedButtons: { [key: string]: string } = {};
-  cargando: boolean = false; // Nueva propiedad para controlar el estado de carga
+  cargando: boolean = false;
   mensajeExito: string = '';
   mostrarMensaje: boolean = false;
   mensajeError: string = '';
   mostrarRetroalimentacion: boolean[] = [];
-  private isSubmitting = false
+  private isSubmitting = false;
   problem_question: any;
   problem_decision: any;
   calificarState: { [key: string]: boolean } = {};
   mostrarRetroalimentacionPregunta: boolean = false;
   mostrarRetroalimentacionDecision: boolean = false;
 
+  // Variables para el modal de confirmación de campos vacíos
+  alertModalMessage = '';
+  confirmModalVisible = false;
+  private _pendingGuardar: (() => void) | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -64,13 +69,13 @@ export class AnalisisComponent implements OnInit {
       docenteSaved: [false],
       problem_question: this.fb.group({
         pregunta: ['', Validators.required],
-        calificacion: ['No Calificado'],
+        calificacion: [''],
         retroalimentacion: [''],
         showCalificar: [false],
       }),
       problem_decision: this.fb.group({
         decision: ['', Validators.required],
-        calificacion: ['No Calificado'],
+        calificacion: [''],
         retroalimentacion: [''],
         showCalificar: [false],
       }),
@@ -112,6 +117,7 @@ export class AnalisisComponent implements OnInit {
       this.asunto = params.get('asunto') || '';
       this.estudiante = params.get('estudiante') || '';
       this.docente = params.get('docente') || '';
+      this.archivoURL = params.get('archivoURL') || '';
       this.analisisForm.patchValue({
         numero_proceso: this.numero_proceso
       });
@@ -293,7 +299,7 @@ export class AnalisisComponent implements OnInit {
           if (analisis.problem_question) {
             const problemQuestion = {
               pregunta: analisis.problem_question.pregunta || '',
-              calificacion: analisis.problem_question.calificacion || 'No Calificado',
+              calificacion: analisis.problem_question.calificacion || '',
               retroalimentacion: analisis.problem_question.retroalimentacion || '',
               showCalificar: analisis.problem_question.showCalificar || false
             };
@@ -304,7 +310,7 @@ export class AnalisisComponent implements OnInit {
           if (analisis.problem_decision) {
             const problemDecision = {
               decision: analisis.problem_decision.decision || '',
-              calificacion: analisis.problem_decision.calificacion || 'No Calificado',
+              calificacion: analisis.problem_decision.calificacion || '',
               retroalimentacion: analisis.problem_decision.retroalimentacion || '',
               showCalificar: analisis.problem_decision.showCalificar || false
             };
@@ -356,14 +362,14 @@ export class AnalisisComponent implements OnInit {
           // Inicializar decision del problema
           this.analisisForm.get('problem_decision')?.patchValue({
             decision: '',
-            calificacion: 'No calificado',
+            calificacion: '',
             retroalimentacion: '',
             showCalificar: false
           })
           // Inicializar pregunta del problema
           this.analisisForm.get('problem_question')?.patchValue({
             pregunta: '',
-            calificacion: 'No Calificado',
+            calificacion: '',
             retroalimentacion: '',
             showCalificar: false
           },
@@ -386,16 +392,20 @@ export class AnalisisComponent implements OnInit {
   }
 
   // MODIFICADO: Acepta argumento opcional 'redirecting' para evitar recarga
+  // 'fromGuardarYContinuar' indica si debe marcarse docenteSaved a true.
   /**
    * Guarda los datos del formulario en Firestore.
    * @param redirecting Si es true, omite la recarga de página para permitir la navegación suave.
+   * @param fromGuardarYContinuar Verdadero si viene del botón "Guardar y continuar".
    */
-  submitForm(redirecting: boolean = false) {
+  submitForm(redirecting: boolean = false, fromGuardarYContinuar: boolean = false) {
     this.isSubmitting = true;
     this.cargando = true;
 
     const normativasValue = this.analisisForm.get('normativas')?.value;
     const facticasValue = this.analisisForm.get('facticas')?.value;
+
+    const docenteCambios = this.isDocente && fromGuardarYContinuar ? { docenteSaved: true } : {};
 
     // Crear el objeto con todos los datos, incluyendo normativas y facticas
     const analisisData = {
@@ -409,14 +419,15 @@ export class AnalisisComponent implements OnInit {
         ...this.analisisForm.get('problem_decision')?.value,
       },
       saved: true,
+      ...docenteCambios,
       timestamp: new Date() // Agregamos un timestamp para asegurar que se detecte el cambio
     };
 
     // Guardar los datos en Firestore
-    this.firestore.collection('analisis').doc(this.numero_proceso).set(analisisData)
+    this.firestore.collection('analisis').doc(this.numero_proceso).set(analisisData, { merge: true })
       .then(() => {
         this.saved = true;
-        this.analisisForm.patchValue({ saved: true }, { emitEvent: false });
+        this.analisisForm.patchValue({ saved: true, ...docenteCambios }, { emitEvent: false });
         this.cargando = false;
         this.mostrarMensajeExito('Guardado con éxito');
 
@@ -458,7 +469,10 @@ export class AnalisisComponent implements OnInit {
 
   getCalificacionValue(controlName: string): string {
     const control = this.analisisForm.get(controlName);
-    return control && control.value ? control.value : 'No Calificado';
+    const value = control?.value;
+    // Traduce 'No Calificado' a 'Sin validar' solo para visualización
+    if (!value || (value === 'No Calificado' || value === 'No calificado')) return 'Pendiente de validar';
+    return value;
   }
 
   redirectToAnalisis2(event: Event) {
@@ -490,29 +504,96 @@ export class AnalisisComponent implements OnInit {
 
   // Método para volver atrás
   volver() {
-    this.router.navigate(['/principal']);
+    this.submitForm(true, false);
+    setTimeout(() => {
+      this.router.navigate(['/principal']);
+    }, 1500);
   }
 
   // MODIFICADO: Llama a submitForm con true para evitar recarga
+  /**
+   * Intercepta el flujo de guardar: si hay campos vacíos muestra modal de confirmación,
+   * de lo contrario guarda y navega directamente.
+   */
   guardarYContinuar(event: Event) {
     event.preventDefault();
+    const doGuardar = () => {
+      this.submitForm(true, true);
+      setTimeout(() => {
+        this.router.navigate(['/analisis2'], {
+          queryParams: {
+            numero_proceso: this.numero_proceso,
+            asunto: this.asunto,
+            estudiante: this.estudiante,
+            docente: this.docente,
+            archivoURL: this.archivoURL
+          }
+        });
+      }, 1500);
+    };
 
-    // Quitar validaciones estrictas temporalmente
+    if (this.tieneCamposVacios() && !this.isDocente) {
+      this._pendingGuardar = doGuardar;
+      this.alertModalMessage = 'Tiene campos vacíos, complételos para avanzar.';
+      this.confirmModalVisible = true;
+    } else if (this.isDocente && this.tieneValidacionesPendientesDocente()) {
+      this.alertModalMessage = 'Por favor, califique todas las preguntas antes de continuar.';
+      this.confirmModalVisible = true;
+    } else {
+      doGuardar();
+    }
+  }
 
-    // Llamamos a submitForm pasando TRUE para que NO haga window.location.reload()
-    this.submitForm(true);
+  /** Devuelve true si el docente tiene validaciones pendientes */
+  tieneValidacionesPendientesDocente(): boolean {
+    const values = this.analisisForm.getRawValue();
 
-    // Esperamos un poco para asegurar que Firebase reciba los datos y luego navegamos
-    setTimeout(() => {
-      this.router.navigate(['/analisis2'], {
-        queryParams: {
-          numero_proceso: this.numero_proceso,
-          asunto: this.asunto,
-          estudiante: this.estudiante,
-          docente: this.docente
-        }
-      });
-    }, 1500);
+    // Check problem question
+    if (!values.problem_question.calificacion || values.problem_question.calificacion === 'No Calificado') return true;
+
+    // Check problem decision
+    if (!values.problem_decision.calificacion || values.problem_decision.calificacion === 'No Calificado') return true;
+
+    // Check normativas
+    if (values.normativas.some((n: any) => !n.calificacion || n.calificacion === 'No Calificado')) return true;
+
+    // Check facticas
+    if (values.facticas.some((f: any) => !f.calificacion || f.calificacion === 'No Calificado')) return true;
+
+    return false;
+  }
+
+  /** Devuelve true si alguno de los campos del estudiante está vacío */
+  tieneCamposVacios(): boolean {
+    const values = this.analisisForm.getRawValue();
+    return this.hayVaciosEnValor(values, '');
+  }
+
+  /** Verifica recursivamente si hay valores vacíos, ignorando campos de docente y metadatos */
+  private hayVaciosEnValor(val: any, key: string): boolean {
+    // Ignorar campos de docente, metadatos y booleanos de control
+    const ignorar = ['calificacion', 'retroalimentacion', 'saved', 'docenteSaved', 'timestamp', 'numero_proceso', 'tipo', 'valida', 'showCalificar'];
+    if (ignorar.some(k => key.toLowerCase().includes(k))) return false;
+    if (val === null || val === undefined || val === '') return true;
+    if (typeof val === 'boolean') return false;
+    if (Array.isArray(val)) return val.length === 0 || val.some((v: any) => this.hayVaciosEnValor(v, key));
+    if (typeof val === 'object') return Object.entries(val).some(([k, v]) => this.hayVaciosEnValor(v, k));
+    return false;
+  }
+
+  /** El usuario confirmó continuar con campos vacíos */
+  onConfirmContinuar(): void {
+    this.confirmModalVisible = false;
+    if (this._pendingGuardar) {
+      this._pendingGuardar();
+      this._pendingGuardar = null;
+    }
+  }
+
+  /** El usuario canceló, cerrar modal sin hacer nada */
+  onCancelConfirm(): void {
+    this.confirmModalVisible = false;
+    this._pendingGuardar = null;
   }
 
   toggleCalificar(index: number, type: string) {

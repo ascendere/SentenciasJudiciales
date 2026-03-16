@@ -1,0 +1,27 @@
+@if (visible) {
+  <!-- Fondo oscuro semitransparente -->
+  <div class="modal-backdrop" (click)="onClose()" role="presentation"></div>
+
+  <!-- Caja del modal -->
+  <div class="modal-box" role="alertdialog" aria-modal="true" [attr.aria-label]="message">
+    <div class="modal-icon">
+      @if (isConfirm) {
+        <i class="fa-solid fa-circle-question"></i>
+      } @else {
+        <i class="fa-solid fa-circle-info"></i>
+      }
+    </div>
+    <p class="modal-message">{{ message }}</p>
+
+    @if (isConfirm) {
+      <!-- Modo confirmación: botones Sí y No -->
+      <div class="modal-btn-row">
+        <button class="modal-btn modal-btn--secondary" (click)="onClose()">Ok</button>
+        <!-- <button class="modal-btn" (click)="onConfirm()" autofocus>Sí</button> -->
+      </div>
+    } @else {
+      <!-- Modo alerta: botón Ok -->
+      <button class="modal-btn" (click)="onClose()" autofocus>Ok</button>
+    }
+  </div>
+}

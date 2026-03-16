@@ -51,6 +51,8 @@ export class SentenciasPageComponent implements OnInit {
   alertas: string[] = [];
   mensajeExito: string = '';
   mostrarMensajeExito: boolean = false;
+  alertModalVisible: boolean = false;
+  alertModalMessage: string = '';
   archivo: File | null = null;
 
   // VARIABLES PARA EL BUSCADOR DE DOCENTES
@@ -258,12 +260,10 @@ export class SentenciasPageComponent implements OnInit {
           this.firestore.collection('sentencias').add(sentenciaAGuardar)
             .then(() => {
               console.log('Sentencia added successfully!');
-              this.mensajeExito = 'Sentencia guardada';
-              this.mostrarMensajeExito = true;
               this.cargando = false;
-              setTimeout(() => {
-                this.router.navigate(['/principal']);
-              }, 2000);
+              // Mostrar modal informativo en lugar de mensaje simple
+              this.alertModalMessage = 'Sentencia creada correctamente. La propuesta ha quedado pendiente de aprobación o rechazo por parte del docente.';
+              this.alertModalVisible = true;
             })
             .catch(error => {
               console.error('Error adding sentencia: ', error);
@@ -273,6 +273,12 @@ export class SentenciasPageComponent implements OnInit {
         });
       })
     ).subscribe();
+  }
+
+  /** Cierra el modal de alerta y navega a la página principal */
+  onAlertModalClose(): void {
+    this.alertModalVisible = false;
+    this.router.navigate(['/principal']);
   }
 
   cerrarAlerta(index: number) {

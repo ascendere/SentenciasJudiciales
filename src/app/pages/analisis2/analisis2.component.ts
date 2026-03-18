@@ -218,7 +218,9 @@ export class Analisis2Component implements OnInit {
    * Actualiza flags de 'saved' y maneja la recarga de página tras guardar.
    */
   submitForm(redirecting: boolean = false, fromGuardarYContinuar: boolean = false) {
-    this.analisis2Form.patchValue({ saved: true });
+    if (!this.isDocente && fromGuardarYContinuar) {
+      this.analisis2Form.patchValue({ saved: true });
+    }
     if (this.isDocente && fromGuardarYContinuar) {
       this.analisis2Form.patchValue({ docenteSaved: true });
     }

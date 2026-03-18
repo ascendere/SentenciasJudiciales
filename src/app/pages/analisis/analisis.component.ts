@@ -406,6 +406,7 @@ export class AnalisisComponent implements OnInit {
     const facticasValue = this.analisisForm.get('facticas')?.value;
 
     const docenteCambios = this.isDocente && fromGuardarYContinuar ? { docenteSaved: true } : {};
+    const estudianteCambios = !this.isDocente && fromGuardarYContinuar ? { saved: true } : {};
 
     // Crear el objeto con todos los datos, incluyendo normativas y facticas
     const analisisData = {
@@ -418,7 +419,7 @@ export class AnalisisComponent implements OnInit {
       problem_decision: {
         ...this.analisisForm.get('problem_decision')?.value,
       },
-      saved: true,
+      ...estudianteCambios,
       ...docenteCambios,
       timestamp: new Date() // Agregamos un timestamp para asegurar que se detecte el cambio
     };

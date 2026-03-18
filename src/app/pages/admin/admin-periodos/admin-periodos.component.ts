@@ -291,15 +291,20 @@ export class AdminPeriodosComponent implements OnInit {
           this.firestore.collection('evaluacion2').doc(numProceso).get().toPromise()
         ]);
 
-        // Verificamos 'saved: true'
-        const checkSaved = (snap: any) => snap?.exists && (snap.data()?.saved === true);
+        // Verificamos 'saved: true' para estudiante y 'docenteSaved: true' para docente
+        const checkStudentSaved = (snap: any) => snap?.exists && (snap.data()?.saved === true);
+        const checkDocenteSaved = (snap: any) => snap?.exists && (snap.data()?.docenteSaved === true);
 
         return {
           ...s,
-          analisis1_ok: checkSaved(analisisSnap),
-          analisis2_ok: checkSaved(analisis2Snap),
-          evaluacion1_ok: checkSaved(evaluacionSnap),
-          evaluacion2_ok: checkSaved(evaluacion2Snap)
+          analisis1_st: checkStudentSaved(analisisSnap),
+          analisis1_doc: checkDocenteSaved(analisisSnap),
+          analisis2_st: checkStudentSaved(analisis2Snap),
+          analisis2_doc: checkDocenteSaved(analisis2Snap),
+          evaluacion1_st: checkStudentSaved(evaluacionSnap),
+          evaluacion1_doc: checkDocenteSaved(evaluacionSnap),
+          evaluacion2_st: checkStudentSaved(evaluacion2Snap),
+          evaluacion2_doc: checkDocenteSaved(evaluacion2Snap)
         };
       }));
 
@@ -317,14 +322,18 @@ export class AdminPeriodosComponent implements OnInit {
         'Estado',
         'Razón/Veredicto',
         'Periodo Académico',
-        'Nombre Docente Antiguo', // Campo extra 1
-        'Correo Docente Antiguo', // Campo extra 2
-        'Fecha de Actualización', // Campo extra 3
-        'Actualizado Por',        // Campo extra 4
-        'Completado Análisis 1',  // Nuevo Check
-        'Completado Análisis 2',  // Nuevo Check
-        'Completado Evaluación 1',// Nuevo Check
-        'Completado Evaluación 2' // Nuevo Check
+        'Nombre Docente Antiguo',
+        'Correo Docente Antiguo',
+        'Fecha de Actualización',
+        'Actualizado Por',
+        'Completado Análisis 1 (Estudiante)',
+        'Completado Análisis 2 (Estudiante)',
+        'Completado Evaluación 1 (Estudiante)',
+        'Completado Evaluación 2 (Estudiante)',
+        'Completado Análisis 1 (Docente)',
+        'Completado Análisis 2 (Docente)',
+        'Completado Evaluación 1 (Docente)',
+        'Completado Evaluación 2 (Docente)'
       ]);
 
       datosCompletos.forEach((s: any) => {
@@ -334,6 +343,8 @@ export class AdminPeriodosComponent implements OnInit {
           const fechaObj = s.fecha_actualizacion.toDate ? s.fecha_actualizacion.toDate() : new Date(s.fecha_actualizacion);
           fecha = fechaObj.toLocaleDateString() + ' ' + fechaObj.toLocaleTimeString();
         }
+
+        const formatStatus = (val: boolean) => val ? 'Completado' : 'No completado';
 
         datosExcel.push([
           s.nombre_docente || '',
@@ -350,11 +361,15 @@ export class AdminPeriodosComponent implements OnInit {
           fecha,
           s.editado_por || s.actualizado_por || '',
 
-          // BOLEANOS (TRUE/FALSE)
-          s.analisis1_ok ? '1' : '0',
-          s.analisis2_ok ? '1' : '0',
-          s.evaluacion1_ok ? '1' : '0',
-          s.evaluacion2_ok ? '1' : '0'
+          // ESTADOS DE COMPLETADO (TEXTO)
+          formatStatus(s.analisis1_st),
+          formatStatus(s.analisis2_st),
+          formatStatus(s.evaluacion1_st),
+          formatStatus(s.evaluacion2_st),
+          formatStatus(s.analisis1_doc),
+          formatStatus(s.analisis2_doc),
+          formatStatus(s.evaluacion1_doc),
+          formatStatus(s.evaluacion2_doc)
         ]);
       });
 
@@ -366,7 +381,8 @@ export class AdminPeriodosComponent implements OnInit {
         { wch: 25 }, { wch: 25 }, { wch: 25 }, { wch: 25 },
         { wch: 20 }, { wch: 30 }, { wch: 15 }, { wch: 40 }, { wch: 25 },
         { wch: 25 }, { wch: 25 }, { wch: 20 }, { wch: 25 },
-        { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }
+        { wch: 25 }, { wch: 25 }, { wch: 25 }, { wch: 25 },
+        { wch: 25 }, { wch: 25 }, { wch: 25 }, { wch: 25 }
       ];
       worksheet['!cols'] = wscols;
 

@@ -363,7 +363,10 @@ export class Evaluacion2Component implements OnInit {
     this.isSubmitting = true;
     this.cargando = true;
     const analisisData = this.evaluacion2Form.value;
-    analisisData.saved = true;
+    
+    if (!this.isDocente && fromGuardarYContinuar) {
+      analisisData.saved = true;
+    }
     
     if (this.isDocente && fromGuardarYContinuar) {
       analisisData.docenteSaved = true;
@@ -375,8 +378,10 @@ export class Evaluacion2Component implements OnInit {
           this.docenteSaved = true;
         }
         this.cargando = false;
-        this.saved = true;
-        this.evaluacion2Form.patchValue({ saved: true });
+        if (!this.isDocente && fromGuardarYContinuar) {
+          this.saved = true;
+          this.evaluacion2Form.patchValue({ saved: true });
+        }
         // console.log('Form submitted and saved:', analisisData);
         this.mostrarMensajeExitoFuncion('Se ha guardado la sección');
         // CAMBIO CLAVE: Solo recarga si NO vamos a redirigir
@@ -546,10 +551,10 @@ export class Evaluacion2Component implements OnInit {
 
   saveFormChanges() {
     const formData = this.evaluacion2Form.value;
-    formData.saved = true;
+    // Eliminado: formData.saved = true; para evitar activar el flag en guardados parciales
     this.firestore.collection('evaluacion2').doc(this.numero_proceso).update(formData)
       .then(() => {
-        this.evaluacion2Form.patchValue({ saved: true });
+        // No actualizamos saved localmente tampoco
       });
   }
 

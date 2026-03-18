@@ -824,7 +824,9 @@ export class EvaluacionComponent implements OnInit {
 
     this.isSubmitting = true
     this.cargando = true
-    this.evaluacionForm.patchValue({ saved: true })
+    if (!this.isDocente && fromGuardarYContinuar) {
+      this.evaluacionForm.patchValue({ saved: true })
+    }
     if (this.isDocente && fromGuardarYContinuar) {
       this.evaluacionForm.patchValue({ docenteSaved: true })
     }

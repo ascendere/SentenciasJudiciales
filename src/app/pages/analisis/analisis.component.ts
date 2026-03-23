@@ -538,7 +538,7 @@ export class AnalisisComponent implements OnInit {
       this.alertModalMessage = 'Tiene campos vacíos, complételos para avanzar.';
       this.confirmModalVisible = true;
     } else if (this.isDocente && this.tieneValidacionesPendientesDocente()) {
-      this.alertModalMessage = 'Por favor, califique todas las preguntas antes de continuar.';
+      this.alertModalMessage = 'Por favor, validar todas las preguntas antes de continuar.';
       this.confirmModalVisible = true;
     } else {
       doGuardar();

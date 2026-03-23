@@ -817,7 +817,7 @@ export class EvaluacionComponent implements OnInit {
     } else {
       // Validación para docentes
       if (fromGuardarYContinuar && this.tieneValidacionesPendientesDocente()) {
-        this.mostrarMensajeError('Por favor, califique todas las preguntas antes de guardar.');
+        this.mostrarMensajeError('Por favor, validar todas las preguntas antes de guardar.');
         return;
       }
     }
@@ -944,7 +944,7 @@ export class EvaluacionComponent implements OnInit {
       this.alertModalMessage = 'Tiene campos vacíos, complételos para avanzar.';
       this.confirmModalVisible = true;
     } else if (this.isDocente && this.tieneValidacionesPendientesDocente()) {
-      this.alertModalMessage = 'Por favor, califique todas las preguntas antes de continuar.';
+      this.alertModalMessage = 'Por favor, validar todas las preguntas antes de continuar.';
       this.confirmModalVisible = true;
     } else {
       doGuardar();

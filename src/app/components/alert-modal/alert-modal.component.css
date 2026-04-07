@@ -38,6 +38,7 @@
   color: #333333;
   line-height: 1.6;
   margin-bottom: 28px;
+  white-space: pre-line;
 }
 
 /* Botón Ok */

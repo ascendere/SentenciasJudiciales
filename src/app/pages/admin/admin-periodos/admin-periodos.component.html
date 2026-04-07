@@ -69,6 +69,27 @@
                     </table>
                 </div>
             </div>
+
+            <!-- Gestión de Archivos (Limpieza) -->
+            <div class="card" style="margin-top: 20px; border-top: 4px solid #e74c3c;">
+                <h3><i class="fa-solid fa-trash-can"></i> Gestión de Archivos</h3>
+                <p class="info-text">Borrar permanentemente todos los PDFs de un periodo pasado para liberar espacio.</p>
+
+                <div class="form-group">
+                    <select [(ngModel)]="periodoBorradoSeleccionado" class="select-full">
+                        <option [ngValue]="null" disabled selected>-- Seleccionar Periodo --</option>
+                        <option *ngFor="let p of periodosPasados" [ngValue]="p">
+                            {{ p.nombre }}
+                        </option>
+                    </select>
+                </div>
+
+                <button class="bttn-delete-pdfs" (click)="borrarPdfsPorPeriodo()" 
+                    [disabled]="!periodoBorradoSeleccionado"
+                    [class.disabled]="!periodoBorradoSeleccionado">
+                    <i class="fa-solid fa-file-pdf"></i> Borrar todos los PDFs
+                </button>
+            </div>
         </div>
 
         <!-- COLUMNA DERECHA: HERRAMIENTAS -->
@@ -107,7 +128,7 @@
                 <div class="form-group">
                     <select [(ngModel)]="periodoReporteSeleccionado" class="select-full">
                         <option [ngValue]="null" disabled selected>-- Seleccionar Periodo --</option>
-                        <option *ngFor="let p of periodos" [ngValue]="p">
+                        <option *ngFor="let p of periodosPasados" [ngValue]="p">
                             {{ p.nombre }}
                         </option>
                     </select>

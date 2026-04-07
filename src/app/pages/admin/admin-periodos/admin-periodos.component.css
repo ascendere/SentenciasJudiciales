@@ -269,6 +269,31 @@
     cursor: not-allowed;
 }
 
+.bttn-delete-pdfs {
+    display: block;
+    width: 100%;
+    background-color: #e74c3c;
+    color: white;
+    text-align: center;
+    padding: 12px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 15px;
+    font-family: 'Poppins';
+    transition: background-color 0.2s;
+}
+
+.bttn-delete-pdfs:hover {
+    background-color: #c0392b;
+}
+
+.bttn-delete-pdfs.disabled {
+    background-color: #f5b7b1;
+    cursor: not-allowed;
+}
+
 .select-full {
     width: 100%;
     padding: 12px;

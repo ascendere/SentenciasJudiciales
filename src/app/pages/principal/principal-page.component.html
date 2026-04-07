@@ -480,5 +480,7 @@
 <app-alert-modal
   [message]="alertModalMessage"
   [visible]="alertModalVisible"
-  (closeModal)="onAlertModalClose()">
+  [isConfirm]="alertModalIsConfirm"
+  (closeModal)="onAlertModalClose()"
+  (confirm)="onAlertModalConfirm()">
 </app-alert-modal>

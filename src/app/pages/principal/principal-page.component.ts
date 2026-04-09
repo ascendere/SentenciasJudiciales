@@ -772,13 +772,13 @@ Una vez completada la información, podrá realizarse la validación correspondi
     if (this.userRole === 'estudiante') {
       this._pendingModalAction = () =>
         this.router.navigate(['/nueva-sentencia']);
-      this.alertModalMessage = `Al continuar con el registro y análisis de la sentencia, usted declara que toda la información proporcionada (incluyendo número de sentencia, asunto y demás datos asociados) es verídica, completa y ha sido ingresada bajo su responsabilidad. 
+      this.alertModalMessage = `Al continuar con el registro y análisis de la sentencia, usted declara que la información proporcionada (incluyendo número de proceso, materia y demás datos asociados) es veraz, completa y ha sido ingresada bajo su exclusiva responsabilidad.
 
-El sistema no valida la autenticidad ni exactitud de los datos ingresados, por lo que cualquier resultado, análisis o interpretación generada se basa exclusivamente en la información suministrada por el usuario. 
+El sistema no valida la autenticidad, exactitud ni integridad de los datos ingresados; en consecuencia, cualquier resultado, análisis o interpretación generada se fundamenta exclusivamente en la información suministrada por el usuario.
 
-Durante el proceso de análisis, se recomienda anonimizar o evitar el ingreso de datos personales sensibles. En caso de incluirlos, usted es responsable de su tratamiento y de cumplir con la normativa vigente de protección de datos. 
+De conformidad con la Ley Orgánica de Protección de Datos Personales del Ecuador, se recomienda aplicar la técnica de anonimización de datos, evitando el ingreso de datos personales, y en especial de datos sensibles. En caso de incluirlos, usted declara contar con legitimación para su tratamiento y asume la responsabilidad de cumplir con las obligaciones legales aplicables en materia de protección de datos personales.
 
-Al hacer clic en “Aceptar”, usted asume total responsabilidad sobre el uso, veracidad y consecuencias derivadas de los datos ingresados y del análisis generado.`;
+Al hacer clic en “Aceptar”, usted manifiesta su consentimiento informado y asume la responsabilidad sobre el uso, tratamiento, veracidad y consecuencias derivadas de los datos ingresados, así como de los resultados generados por el sistema.`;
       this.alertModalIsConfirm = true;
       this.alertModalVisible = true;
     } else {

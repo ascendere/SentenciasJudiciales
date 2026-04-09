@@ -22,7 +22,6 @@ import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { IPublicClientApplication, InteractionType, PublicClientApplication, BrowserCacheLocation, LogLevel } from '@azure/msal-browser';
 import { AuthService } from './services/auth.service';
 import { FooterComponent } from "./components/footer/footer.component";
-import { EditarSentenciaComponent } from './pages/editar-sentencia/editar-sentencia.component';
 import { CommonModule } from '@angular/common';
 import { AlertModalComponent } from './components/alert-modal/alert-modal.component';
 
@@ -95,7 +94,6 @@ export function MSALInstanceFactory(): IPublicClientApplication {
     EvaluacionComponent,
     CajaTextoComponent,
     Evaluacion2Component,
-    EditarSentenciaComponent,
     AlertModalComponent
   ],
   imports: [

@@ -1,6 +1,6 @@
 <app-header></app-header>
 
-<div class="inputs-sent">
+<div class="inputs-sent" style="max-width: 80%; margin: auto;">
   <div class="alert-content">
     <div *ngFor="let alerta of alertas; let i = index" class="alerta" (click)="cerrarAlerta(i)">
       <p>{{ alerta }}</p>
@@ -9,92 +9,333 @@
 
   <div class="tittle-sent">
     <h4>SISTEMA JURÍDICO AVANZADO DE SENTENCIAS DE PRIMER NIVEL EN EL ECUADOR</h4>
+    <p><strong>Criterios para Dimensiones Cuantificables – Repositorio de Motivación de Sentencias de Primer Nivel en Ecuador</strong></p>
   </div>
 
-  <!-- Formulario de creación de Nueva Sentencia -->
   <form (ngSubmit)="submitForm()">
+    
+    <!-- 0. CONTROL Y DOCENTE -->
+    <div class="form-card" *ngIf="isEditMode && (isAdmin || currentUserRole === 'administrador' || currentUserRole === 'docente')">
+      <h5 class="form-card-title">Gestión de Docente</h5>
+      <div class="dato-sent">
+        <label>¿El docente actual continúa con la sentencia?</label><br>
+        <label><input type="radio" name="continua_docente" [(ngModel)]="continuaDocente" [value]="true"> Sí</label>
+        <label><input type="radio" name="continua_docente" [(ngModel)]="continuaDocente" [value]="false"> No</label>
+      </div>
 
-    <div class="dato-sent">
-      <label class="numero-proceso" for="process">1. Numero de Proceso:</label><br>
-      <input class="numero-proceso" type="text" id="process" name="process" [(ngModel)]="sentencia.numero_proceso"
-        (keypress)="validarNumeroProcess($event)" (input)="formatearNumeroProcess($event)" required><br>
-      <small class="input-info">
-        Únicamente se admite números y guiones "-"
-      </small>
-    </div>
+      <div *ngIf="!continuaDocente">
+        <div class="dato-sent">
+          <label for="nuevo_docente_search">Nuevo docente (Buscar):</label><br>
+          <div class="autocomplete-container">
+            <input type="text" id="nuevo_docente_search" name="nuevo_docente_search" class="docente-input"
+              placeholder="Escriba el nombre del nuevo docente..." [(ngModel)]="searchTermNuevo"
+              (input)="filterDocentesNuevo()" (focus)="showDropdownNuevo = true" (blur)="hideDropdownNuevo()"
+              autocomplete="off">
 
-    <div class="dato-sent">
-      <label class="asunto" for="subject">2. Asunto:</label><br>
-      <input class="asunto" type="text" id="subject" name="subject" [(ngModel)]="sentencia.asunto" required><br>
-    </div>
+            <ul class="autocomplete-list" *ngIf="showDropdownNuevo && filteredDocentesNuevo.length > 0">
+              <li *ngFor="let docente of filteredDocentesNuevo" (click)="selectDocenteNuevo(docente)">
+                <strong>{{ docente.name }}</strong> <br>
+                <small style="color: #666;">{{ docente.email }}</small>
+              </li>
+            </ul>
+            <div class="no-results" *ngIf="showDropdownNuevo && filteredDocentesNuevo.length === 0">
+              No se encontraron docentes.
+            </div>
+          </div>
+        </div>
 
-    <div class="dato-sent">
-      <label class="estudiante" for="student">3. Estudiante:</label><br>
-      <input class="estudiante" type="text" id="student" name="student" [(ngModel)]="sentencia.nombre_estudiante"
-        readonly><br>
-    </div>
-
-    <div class="dato-sent">
-      <label class="estudiante" for="email">3. Correo:</label><br>
-      <input class="estudiante" type="email" id="email" name="email" [(ngModel)]="sentencia.email_estudiante"
-        readonly><br>
-    </div>
-
-    <!-- BUSCADOR DE DOCENTE (AUTOCOMPLETE) -->
-    <!-- Permite buscar docentes activos para asignar la revisión -->
-    <div class="dato-sent">
-      <label class="label-docente" for="teacher-search">4. Docente (Buscar):</label><br>
-      <div class="autocomplete-container">
-        <input type="text" id="teacher-search" name="teacher-search" class="docente-input"
-          placeholder="Escriba el nombre del docente..." [(ngModel)]="searchTermDocente" (input)="filterDocentes()"
-          (focus)="showDropdown = true" (blur)="hideDropdown()" autocomplete="off" required>
-
-        <!-- Lista desplegable -->
-        <ul class="autocomplete-list" *ngIf="showDropdown && filteredDocentes.length > 0">
-          <li *ngFor="let docente of filteredDocentes" (click)="selectDocente(docente)">
-            <strong>{{ docente.name }}</strong> <br>
-            <small style="color: #666;">{{ docente.email }}</small>
-          </li>
-        </ul>
-
-        <!-- Mensaje si no hay resultados -->
-        <div class="no-results" *ngIf="showDropdown && filteredDocentes.length === 0">
-          No se encontraron docentes.
+        <div class="dato-sent">
+          <label for="nuevo_email_docente">Correo del nuevo docente:</label><br>
+          <input class="estudiante" type="email" id="nuevo_email_docente" name="nuevo_email_docente"
+            [(ngModel)]="nuevoEmailDocente" readonly>
         </div>
       </div>
     </div>
 
-    <div class="dato-sent">
-      <label class="estudiante" for="email_docente">5. Correo del docente:</label><br>
-      <input class="estudiante" type="email" id="email_docente" name="email_docente"
-        [(ngModel)]="sentencia.email_docente" readonly><br>
+    <!-- DATOS BÁSICOS -->
+    <div class="form-card">
+      <h5 class="form-card-title">Datos Básicos del Proceso</h5>
+      <div class="dato-sent">
+        <label class="numero-proceso" for="process">Número de Proceso:</label><br>
+        <input class="numero-proceso" type="text" id="process" name="process" [(ngModel)]="sentencia.numero_proceso"
+          (keypress)="validarNumeroProcess($event)" (input)="formatearNumeroProcess($event)" required><br>
+        <small class="input-info">Únicamente se admite números y guiones "-"</small>
+      </div>
+
+      <div class="dato-sent">
+        <label for="unidad_jurisdiccional">Unidad jurisdiccional:</label><br>
+        <input type="text" id="unidad_jurisdiccional" name="unidad_jurisdiccional" [(ngModel)]="sentencia.unidad_jurisdiccional" required>
+      </div>
+
+      <div class="dato-sent" style="display: flex; gap: 20px;">
+        <div style="flex: 1;">
+          <label for="canton">Cantón:</label><br>
+          <input type="text" id="canton" name="canton" [(ngModel)]="sentencia.canton" required>
+        </div>
+        <div style="flex: 1;">
+          <label for="provincia">Provincia:</label><br>
+          <input type="text" id="provincia" name="provincia" [(ngModel)]="sentencia.provincia" required>
+        </div>
+      </div>
+
+      <div class="dato-sent" style="display: flex; gap: 20px;">
+        <div style="flex: 1;">
+          <label for="anio_inicio">Año de inicio del proceso:</label><br>
+          <input type="number" id="anio_inicio" name="anio_inicio" [(ngModel)]="sentencia.anio_inicio" min="2015" placeholder="Ej. 2015" required>
+        </div>
+        <div style="flex: 1;">
+          <label for="fecha_emision">Fecha en la que se emite la sentencia (finaliza la causa):</label><br>
+          <input type="date" id="fecha_emision" name="fecha_emision" [(ngModel)]="sentencia.fecha_emision" required>
+        </div>
+      </div>
     </div>
 
-    <div class="dato-sent">
-      <label class="periodo-academico" for="periodo">6. Periodo Académico:</label><br>
-      <input class="periodo-academico" type="text" id="periodo" name="periodo" [(ngModel)]="sentencia.periodo_academico"
-        readonly><br>
+    <!-- MATERIA Y PROCEDIMIENTO -->
+    <div class="form-card">
+      <h5 class="form-card-title">Materia y Procedimiento</h5>
+      
+      <div class="dato-sent">
+        <label><strong>Materia o asunto de la sentencia (se selecciona solo una):</strong></label><br>
+        <div class="radio-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top:10px;">
+          <label *ngFor="let m of materiasDisponibles">
+            <input type="radio" [value]="m" name="materia_asunto" [(ngModel)]="sentencia.asunto" required> {{m}}
+          </label>
+        </div>
+      </div>
+
+      <div class="dato-sent" style="margin-top: 25px;">
+        <label><strong>Categoría del tipo de procedimiento:</strong></label><br>
+        <div class="radio-group" style="display: flex; gap: 15px; flex-wrap: wrap; margin-top:10px;">
+          <label><input type="radio" value="Civil" name="cat_proc" [(ngModel)]="opcion_categoria_procedimiento" (change)="opcion_tipo_procedimiento = ''; sentencia.tipo_procedimiento = ''" required> Civil</label>
+          <label><input type="radio" value="Penal" name="cat_proc" [(ngModel)]="opcion_categoria_procedimiento" (change)="opcion_tipo_procedimiento = ''; sentencia.tipo_procedimiento = ''" required> Penal</label>
+          <label><input type="radio" value="Constitucional" name="cat_proc" [(ngModel)]="opcion_categoria_procedimiento" (change)="opcion_tipo_procedimiento = ''; sentencia.tipo_procedimiento = ''" required> Constitucional</label>
+          <label><input type="radio" value="Administrativo" name="cat_proc" [(ngModel)]="opcion_categoria_procedimiento" (change)="opcion_tipo_procedimiento = ''; sentencia.tipo_procedimiento = ''" required> Administrativo</label>
+          <label><input type="radio" value="Otro" name="cat_proc" [(ngModel)]="opcion_categoria_procedimiento" (change)="opcion_tipo_procedimiento = 'Otro'; sentencia.tipo_procedimiento = ''" required> Otro</label>
+        </div>
+      </div>
+
+      <div class="dato-sent" style="margin-top: 20px;" *ngIf="opcion_categoria_procedimiento">
+        <label *ngIf="opcion_categoria_procedimiento !== 'Otro'"><strong>Tipo de procedimiento (se elige 1):</strong></label><br>
+        
+        <div style="margin-top:10px;">
+          
+          <!-- CIVIL -->
+          <div *ngIf="opcion_categoria_procedimiento === 'Civil'" style="background: #f9f9f9; padding: 10px; border-radius: 5px;">
+            <div class="radio-group" style="display: flex; flex-direction: column; gap: 5px;">
+              <label><input type="radio" value="Procedimiento Ordinario (Civil)" name="tipo_procedimiento" [(ngModel)]="opcion_tipo_procedimiento" (change)="manejarCambioOpcion('opcion_tipo_procedimiento', 'tipo_procedimiento')" required> Procedimiento Ordinario</label>
+              <label><input type="radio" value="Procedimiento Sumario (Civil)" name="tipo_procedimiento" [(ngModel)]="opcion_tipo_procedimiento" (change)="manejarCambioOpcion('opcion_tipo_procedimiento', 'tipo_procedimiento')" required> Procedimiento Sumario</label>
+              <label><input type="radio" value="Procedimiento Ejecutivo (Civil)" name="tipo_procedimiento" [(ngModel)]="opcion_tipo_procedimiento" (change)="manejarCambioOpcion('opcion_tipo_procedimiento', 'tipo_procedimiento')" required> Procedimiento Ejecutivo</label>
+              <label><input type="radio" value="Procedimiento Monitorio (Civil)" name="tipo_procedimiento" [(ngModel)]="opcion_tipo_procedimiento" (change)="manejarCambioOpcion('opcion_tipo_procedimiento', 'tipo_procedimiento')" required> Procedimiento Monitorio</label>
+              <label><input type="radio" value="Procedimiento Voluntario (Civil)" name="tipo_procedimiento" [(ngModel)]="opcion_tipo_procedimiento" (change)="manejarCambioOpcion('opcion_tipo_procedimiento', 'tipo_procedimiento')" required> Procedimiento Voluntario</label>
+            </div>
+          </div>
+          
+          <!-- PENAL -->
+          <div *ngIf="opcion_categoria_procedimiento === 'Penal'" style="background: #f9f9f9; padding: 10px; border-radius: 5px;">
+            <div class="radio-group" style="display: flex; flex-direction: column; gap: 5px;">
+              <label><input type="radio" value="Procedimiento Ordinario (Penal)" name="tipo_procedimiento" [(ngModel)]="opcion_tipo_procedimiento" (change)="manejarCambioOpcion('opcion_tipo_procedimiento', 'tipo_procedimiento')" required> Procedimiento Ordinario</label>
+              <strong style="margin-top: 5px; color: #555; display: block;">Procedimientos Especiales:</strong>
+              <label style="margin-left: 10px;"><input type="radio" value="Procedimiento Abreviado" name="tipo_procedimiento" [(ngModel)]="opcion_tipo_procedimiento" (change)="manejarCambioOpcion('opcion_tipo_procedimiento', 'tipo_procedimiento')" required> Procedimiento Abreviado</label>
+              <label style="margin-left: 10px;"><input type="radio" value="Procedimiento Directo" name="tipo_procedimiento" [(ngModel)]="opcion_tipo_procedimiento" (change)="manejarCambioOpcion('opcion_tipo_procedimiento', 'tipo_procedimiento')" required> Procedimiento Directo</label>
+              <label style="margin-left: 10px;"><input type="radio" value="Procedimiento Expedito" name="tipo_procedimiento" [(ngModel)]="opcion_tipo_procedimiento" (change)="manejarCambioOpcion('opcion_tipo_procedimiento', 'tipo_procedimiento')" required> Procedimiento Expedito</label>
+              <label style="margin-left: 10px;"><input type="radio" value="El procedimiento para el ejercicio privado de la acción penal" name="tipo_procedimiento" [(ngModel)]="opcion_tipo_procedimiento" (change)="manejarCambioOpcion('opcion_tipo_procedimiento', 'tipo_procedimiento')" required> El procedimiento para el ejercicio privado de la acción penal</label>
+              <label style="margin-left: 10px;"><input type="radio" value="Procedimiento para delitos de violencia contra la mujer y núcleo familiar" name="tipo_procedimiento" [(ngModel)]="opcion_tipo_procedimiento" (change)="manejarCambioOpcion('opcion_tipo_procedimiento', 'tipo_procedimiento')" required> Procedimiento para delitos de violencia contra la mujer y núcleo familiar</label>
+            </div>
+          </div>
+
+          <!-- CONSTITUCIONAL -->
+          <div *ngIf="opcion_categoria_procedimiento === 'Constitucional'" style="background: #f9f9f9; padding: 10px; border-radius: 5px;">
+            <div class="radio-group" style="display: flex; flex-direction: column; gap: 5px;">
+              <strong style="margin-top: 5px; color: #555; display: block;">Garantías jurisdiccionales:</strong>
+              <label style="margin-left: 10px;"><input type="radio" value="Acción de protección" name="tipo_procedimiento" [(ngModel)]="opcion_tipo_procedimiento" (change)="manejarCambioOpcion('opcion_tipo_procedimiento', 'tipo_procedimiento')" required> Acción de protección</label>
+              <label style="margin-left: 10px;"><input type="radio" value="Acción de Hábeas corpus" name="tipo_procedimiento" [(ngModel)]="opcion_tipo_procedimiento" (change)="manejarCambioOpcion('opcion_tipo_procedimiento', 'tipo_procedimiento')" required> Acción de Hábeas corpus</label>
+              <label style="margin-left: 10px;"><input type="radio" value="Acción de Hábeas data" name="tipo_procedimiento" [(ngModel)]="opcion_tipo_procedimiento" (change)="manejarCambioOpcion('opcion_tipo_procedimiento', 'tipo_procedimiento')" required> Acción de Hábeas data</label>
+              <label style="margin-left: 10px;"><input type="radio" value="Acción de Acceso a la información" name="tipo_procedimiento" [(ngModel)]="opcion_tipo_procedimiento" (change)="manejarCambioOpcion('opcion_tipo_procedimiento', 'tipo_procedimiento')" required> Acción de Acceso a la información</label>
+            </div>
+          </div>
+
+          <!-- ADMINISTRATIVO -->
+          <div *ngIf="opcion_categoria_procedimiento === 'Administrativo'" style="background: #f9f9f9; padding: 10px; border-radius: 5px;">
+            <div class="radio-group" style="display: flex; flex-direction: column; gap: 5px;">
+              <label><input type="radio" value="Procedimiento común" name="tipo_procedimiento" [(ngModel)]="opcion_tipo_procedimiento" (change)="manejarCambioOpcion('opcion_tipo_procedimiento', 'tipo_procedimiento')" required> Procedimiento común</label>
+              <label><input type="radio" value="Procedimiento de bienes y servicios" name="tipo_procedimiento" [(ngModel)]="opcion_tipo_procedimiento" (change)="manejarCambioOpcion('opcion_tipo_procedimiento', 'tipo_procedimiento')" required> Procedimiento de bienes y servicios</label>
+              <strong style="margin-top: 5px; color: #555; display: block;">Procedimientos especiales:</strong>
+              <label style="margin-left: 10px;"><input type="radio" value="Ejecución coactiva, sancionador" name="tipo_procedimiento" [(ngModel)]="opcion_tipo_procedimiento" (change)="manejarCambioOpcion('opcion_tipo_procedimiento', 'tipo_procedimiento')" required> Ejecución coactiva, sancionador</label>
+              <label style="margin-left: 10px;"><input type="radio" value="LOSEP procedimiento disciplinario" name="tipo_procedimiento" [(ngModel)]="opcion_tipo_procedimiento" (change)="manejarCambioOpcion('opcion_tipo_procedimiento', 'tipo_procedimiento')" required> LOSEP procedimiento disciplinario</label>
+            </div>
+          </div>
+
+        </div>
+
+        <div *ngIf="opcion_categoria_procedimiento === 'Otro'" style="margin-top: 15px; padding: 10px; background: #f9f9f9; border-radius: 5px;">
+          <label><strong>Escribir otro procedimiento:</strong></label><br>
+          <input type="text" name="procedimiento_otro" [(ngModel)]="sentencia.tipo_procedimiento" placeholder="Escribir otro procedimiento" required style="margin-top:10px;">
+        </div>
+
+      </div>
+
+    </div>
+    
+    <!-- VARIABLES SOCIODEMOGRÁFICAS -->
+    <div class="form-card">
+      <h5 class="form-card-title">Variables Sociodemográficas y Procesales</h5>
+
+      <!-- GÉNERO ACTOR -->
+      <div class="dato-sent">
+        <label>Género del actor/accionante/víctima/etc. (según corresponda):</label><br>
+        <div class="radio-group" style="display: flex; gap: 15px; margin-top: 10px;">
+          <label><input type="radio" value="Masculino" name="gen_actor" [(ngModel)]="opcion_genero_actor" (change)="manejarCambioOpcion('opcion_genero_actor', 'genero_actor')" required> Masculino</label>
+          <label><input type="radio" value="Femenino" name="gen_actor" [(ngModel)]="opcion_genero_actor" (change)="manejarCambioOpcion('opcion_genero_actor', 'genero_actor')" required> Femenino</label>
+          <label><input type="radio" value="Otro" name="gen_actor" [(ngModel)]="opcion_genero_actor" (change)="manejarCambioOpcion('opcion_genero_actor', 'genero_actor')" required> Otro</label>
+        </div>
+        <input type="text" *ngIf="opcion_genero_actor === 'Otro'" name="gen_actor_otro" [(ngModel)]="sentencia.genero_actor" placeholder="Especificar género del actor" required style="margin-top:10px;">
+      </div>
+
+      <!-- GÉNERO DEMANDADO -->
+      <div class="dato-sent">
+        <label>Género del demandado/accionado/procesado/etc. (según corresponda):</label><br>
+        <div class="radio-group" style="display: flex; gap: 15px; margin-top: 10px;">
+          <label><input type="radio" value="Masculino" name="gen_demandado" [(ngModel)]="opcion_genero_demandado" (change)="manejarCambioOpcion('opcion_genero_demandado', 'genero_demandado')" required> Masculino</label>
+          <label><input type="radio" value="Femenino" name="gen_demandado" [(ngModel)]="opcion_genero_demandado" (change)="manejarCambioOpcion('opcion_genero_demandado', 'genero_demandado')" required> Femenino</label>
+          <label><input type="radio" value="Otro" name="gen_demandado" [(ngModel)]="opcion_genero_demandado" (change)="manejarCambioOpcion('opcion_genero_demandado', 'genero_demandado')" required> Otro</label>
+        </div>
+        <input type="text" *ngIf="opcion_genero_demandado === 'Otro'" name="gen_demandado_otro" [(ngModel)]="sentencia.genero_demandado" placeholder="Especificar género del demandado" required style="margin-top:10px;">
+      </div>
+
+      <!-- TIPO ACTOR -->
+      <div class="dato-sent">
+        <label>Tipo de actor/accionante/etc.:</label><br>
+        <div class="radio-group" style="display: flex; gap: 15px; margin-top: 10px;">
+          <label><input type="radio" value="Persona natural" name="tipo_actor" [(ngModel)]="opcion_tipo_actor" (change)="manejarCambioOpcion('opcion_tipo_actor', 'tipo_actor')" required> Persona natural</label>
+          <label><input type="radio" value="Persona jurídica" name="tipo_actor" [(ngModel)]="opcion_tipo_actor" (change)="manejarCambioOpcion('opcion_tipo_actor', 'tipo_actor')" required> Persona jurídica</label>
+          <label><input type="radio" value="Otro" name="tipo_actor" [(ngModel)]="opcion_tipo_actor" (change)="manejarCambioOpcion('opcion_tipo_actor', 'tipo_actor')" required> Especifique</label>
+        </div>
+        <input type="text" *ngIf="opcion_tipo_actor === 'Otro'" name="tipo_actor_otro" [(ngModel)]="sentencia.tipo_actor" placeholder="Especificar tipo actor" required style="margin-top:10px;">
+      </div>
+
+      <!-- TIPO DEMANDADO -->
+      <div class="dato-sent">
+        <label>Tipo de demandado/accionado, etc.:</label><br>
+        <div class="radio-group" style="display: flex; gap: 15px; margin-top: 10px;">
+          <label><input type="radio" value="Persona natural" name="tipo_demandado" [(ngModel)]="opcion_tipo_demandado" (change)="manejarCambioOpcion('opcion_tipo_demandado', 'tipo_demandado')" required> Persona natural</label>
+          <label><input type="radio" value="Persona jurídica" name="tipo_demandado" [(ngModel)]="opcion_tipo_demandado" (change)="manejarCambioOpcion('opcion_tipo_demandado', 'tipo_demandado')" required> Persona jurídica</label>
+          <label><input type="radio" value="Otro" name="tipo_demandado" [(ngModel)]="opcion_tipo_demandado" (change)="manejarCambioOpcion('opcion_tipo_demandado', 'tipo_demandado')" required> Especifique</label>
+        </div>
+        <input type="text" *ngIf="opcion_tipo_demandado === 'Otro'" name="tipo_demandado_otro" [(ngModel)]="sentencia.tipo_demandado" placeholder="Especificar tipo demandado" required style="margin-top:10px;">
+      </div>
+
+      <!-- RECURSOS HORIZONTALES -->
+      <div class="dato-sent">
+        <label>Interposición de recursos horizontales:</label><br>
+        <div class="radio-group" style="display: flex; gap: 15px; margin-top: 10px;">
+          <label><input type="radio" value="si" name="rh" [(ngModel)]="sentencia.recursos_horizontales" required> Sí</label>
+          <label><input type="radio" value="no" name="rh" [(ngModel)]="sentencia.recursos_horizontales" required> No</label>
+        </div>
+        
+        <div *ngIf="sentencia.recursos_horizontales === 'si'" style="margin-top: 10px; margin-left: 20px;">
+          <label>Indique el recurso horizontal:</label><br>
+          <div class="radio-group" style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px;">
+            <label><input type="radio" value="Aclaración" name="rh_tipo" [(ngModel)]="opcion_recurso_horizontal_tipo" (change)="manejarCambioOpcion('opcion_recurso_horizontal_tipo', 'recurso_horizontal_tipo')" required> Aclaración</label>
+            <label><input type="radio" value="Reforma" name="rh_tipo" [(ngModel)]="opcion_recurso_horizontal_tipo" (change)="manejarCambioOpcion('opcion_recurso_horizontal_tipo', 'recurso_horizontal_tipo')" required> Reforma</label>
+            <label><input type="radio" value="Ampliación" name="rh_tipo" [(ngModel)]="opcion_recurso_horizontal_tipo" (change)="manejarCambioOpcion('opcion_recurso_horizontal_tipo', 'recurso_horizontal_tipo')" required> Ampliación</label>
+            <label><input type="radio" value="Revocatoria" name="rh_tipo" [(ngModel)]="opcion_recurso_horizontal_tipo" (change)="manejarCambioOpcion('opcion_recurso_horizontal_tipo', 'recurso_horizontal_tipo')" required> Revocatoria</label>
+            <label><input type="radio" value="Otro" name="rh_tipo" [(ngModel)]="opcion_recurso_horizontal_tipo" (change)="manejarCambioOpcion('opcion_recurso_horizontal_tipo', 'recurso_horizontal_tipo')" required> Otro</label>
+          </div>
+          <input type="text" *ngIf="opcion_recurso_horizontal_tipo === 'Otro'" name="rh_otro" [(ngModel)]="sentencia.recurso_horizontal_tipo" placeholder="Especificar recurso horizontal" required style="margin-top:10px;">
+        </div>
+      </div>
+
+      <!-- RECURSOS VERTICALES -->
+      <div class="dato-sent">
+        <label>Interposición de recursos verticales:</label><br>
+        <div class="radio-group" style="display: flex; gap: 15px; margin-top: 10px;">
+          <label><input type="radio" value="si" name="rv" [(ngModel)]="sentencia.recursos_verticales" required> Sí</label>
+          <label><input type="radio" value="no" name="rv" [(ngModel)]="sentencia.recursos_verticales" required> No</label>
+        </div>
+
+        <div *ngIf="sentencia.recursos_verticales === 'si'" style="margin-top: 10px; margin-left: 20px;">
+          <label>Indique el recurso vertical:</label><br>
+          <div class="radio-group" style="display: flex; gap: 15px; margin-top: 10px;">
+            <label><input type="radio" value="Apelación" name="rv_tipo" [(ngModel)]="opcion_recurso_vertical_tipo" (change)="manejarCambioOpcion('opcion_recurso_vertical_tipo', 'recurso_vertical_tipo')" required> Apelación</label>
+            <label><input type="radio" value="Otro" name="rv_tipo" [(ngModel)]="opcion_recurso_vertical_tipo" (change)="manejarCambioOpcion('opcion_recurso_vertical_tipo', 'recurso_vertical_tipo')" required> Otro</label>
+          </div>
+          <input type="text" *ngIf="opcion_recurso_vertical_tipo === 'Otro'" name="rv_otro" [(ngModel)]="sentencia.recurso_vertical_tipo" placeholder="Especificar recurso vertical" required style="margin-top:10px;">
+        </div>
+      </div>
+
     </div>
 
-    <div class="dato-sent-file">
-      <label for="archivo"> Carga de sentencia: </label><br>
-      <label for="archivo" id="cargar-archivo-label">
-        <img src="../../../assets/images/Cargar.png" alt="Cargar PDF">
-      </label>
-      <input type="file" id="archivo" name="archivo" (change)="onFileSelected($event)" accept="application/pdf"
-        style="display: none;">
-    </div>
-    <p class="msg-file-status" [ngClass]="{'sin-archivo': !fileLoaded, 'archivo-subido': fileLoaded}">
-      {{ archivoMensaje }}
-    </p>
+    <!-- METADATOS TÉCNICOS ACADÉMICOS -->
+    <div class="form-card">
+      <h5 class="form-card-title">Metadatos Académicos y Archivo</h5>
 
+      <div class="dato-sent">
+        <label class="estudiante" for="student">Estudiante a cargo:</label><br>
+        <input class="estudiante" type="text" id="student" name="student" [(ngModel)]="sentencia.nombre_estudiante"
+          readonly><br>
+      </div>
+
+      <div class="dato-sent">
+        <label class="estudiante" for="email">Correo estudiante:</label><br>
+        <input class="estudiante" type="email" id="email" name="email" [(ngModel)]="sentencia.email_estudiante"
+          readonly><br>
+      </div>
+
+      <div class="dato-sent">
+        <label class="label-docente" for="teacher-search">Docente Supervisor (Buscar):</label><br>
+        <div class="autocomplete-container">
+          <input type="text" id="teacher-search" name="teacher-search" class="docente-input"
+            placeholder="Escriba el nombre del docente..." [(ngModel)]="searchTermDocente" (input)="filterDocentes()"
+            (focus)="showDropdown = true" (blur)="hideDropdown()" autocomplete="off" required>
+
+          <ul class="autocomplete-list" *ngIf="showDropdown && filteredDocentes.length > 0">
+            <li *ngFor="let docente of filteredDocentes" (click)="selectDocente(docente)">
+              <strong>{{ docente.name }}</strong> <br>
+              <small style="color: #666;">{{ docente.email }}</small>
+            </li>
+          </ul>
+          <div class="no-results" *ngIf="showDropdown && filteredDocentes.length === 0">
+            No se encontraron docentes.
+          </div>
+        </div>
+      </div>
+
+      <div class="dato-sent">
+        <label class="estudiante" for="email_docente">Correo del docente:</label><br>
+        <input class="estudiante" type="email" id="email_docente" name="email_docente"
+          [(ngModel)]="sentencia.email_docente" readonly><br>
+      </div>
+
+      <div class="dato-sent">
+        <label class="periodo-academico" for="periodo">Periodo Académico:</label><br>
+        <input class="periodo-academico" type="text" id="periodo" name="periodo" [(ngModel)]="sentencia.periodo_academico"
+          readonly><br>
+      </div>
+
+      <!-- CARGA DE ARCHIVO -->
+      <div class="dato-sent-file">
+        <label for="archivo" style="font-weight: 500;"> Oprima para seleccionar la sentencia (PDF): </label><br>
+        <label for="archivo" id="cargar-archivo-label" style="cursor:pointer; display: block; margin-top: 15px;">
+          <img src="../../../assets/images/Cargar.png" alt="Cargar PDF" style="width: 60px;">
+        </label>
+        <input type="file" id="archivo" name="archivo" (change)="onFileSelected($event)" accept="application/pdf"
+          style="display: none;">
+      </div>
+      <p class="msg-file-status" [ngClass]="{'sin-archivo': !fileLoaded, 'archivo-subido': fileLoaded}">
+        {{ archivoMensaje }}
+      </p>
+
+    </div>
+
+    <!-- GUARDAR -->
     <div class="save">
-      <button class="bttn-stnd" type="submit" [disabled]="cargando">Guardar</button>
-      <button class="custom-button" type="button" *ngIf="cargando">
+      <button class="bttn-stnd" type="submit" [disabled]="cargando" style="width: 250px; font-size: 1.1em; padding: 10px; justify-content: center; align-items: center;">Guardar Sentencia</button>
+      <button class="custom-button" type="button" *ngIf="cargando" disabled style="width: 250px; padding: 10px;">
         <div class="spinner"></div>
-        <span class="button-text">Cargando sentencia...</span>
+        <span class="button-text">Guardando...</span>
       </button>
     </div>
+    
     <div *ngIf="mostrarMensajeExito" class="mensaje-exito">
       {{ mensajeExito }}
     </div>
@@ -102,7 +343,6 @@
   </form>
 </div>
 
-<!-- Modal de alerta informativa -->
 <app-alert-modal
   [message]="alertModalMessage"
   [visible]="alertModalVisible"

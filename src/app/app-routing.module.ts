@@ -7,7 +7,7 @@ import { AnalisisComponent } from './pages/analisis/analisis.component';
 import { Analisis2Component } from './pages/analisis2/analisis2.component';
 import { EvaluacionComponent } from './pages/evaluacion/evaluacion.component';
 import { Evaluacion2Component } from './pages/evaluacion2/evaluacion2.component';
-import { EditarSentenciaComponent } from './pages/editar-sentencia/editar-sentencia.component';
+
 import { AdminGuard } from './guards/admin.guard';
 import { SentenceOwnerGuard } from './guards/sentence-owner.guard';
 
@@ -28,7 +28,7 @@ export const routes: Routes = [
   { path: 'analisis2', component: Analisis2Component, canActivate: [SentenceOwnerGuard] },
   { path: 'evaluacion', component: EvaluacionComponent, canActivate: [SentenceOwnerGuard] },
   { path: 'evaluacion2', component: Evaluacion2Component, canActivate: [SentenceOwnerGuard] },
-  { path: 'editar-sentencia', component: EditarSentenciaComponent, canActivate: [SentenceOwnerGuard] },
+  { path: 'editar-sentencia', component: SentenciasPageComponent, canActivate: [SentenceOwnerGuard] },
 
   // Módulo de Administración (Carga perezosa y protegido por AdminGuard)
   { path: 'admin', loadChildren: () => import('./pages/admin/admin.module').then(m => m.AdminModule), canActivate: [AdminGuard] },

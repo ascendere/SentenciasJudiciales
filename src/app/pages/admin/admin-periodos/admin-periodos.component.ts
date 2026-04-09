@@ -72,6 +72,20 @@ export class AdminPeriodosComponent implements OnInit, OnDestroy {
     return list;
   }
 
+  get periodosParaReporte(): Periodo[] {
+    const list = [...this.periodos];
+    // Añadimos una opción virtual para sentencias sin periodo asignado
+    list.push({
+      id: '_SIN_PERIODO_',
+      nombre: 'Sin Periodo / No especificado',
+      ciclo: '',
+      anio_inicio: 0,
+      anio_fin: 0,
+      activo: false,
+    });
+    return list;
+  }
+
   abrirModal() {
     this.cicloSeleccionado = 'abril - agosto';
     this.anioInput = new Date().getFullYear();
@@ -417,7 +431,21 @@ export class AdminPeriodosComponent implements OnInit, OnDestroy {
         'Nombre Estudiante',
         'Correo Estudiante',
         'Número de Proceso',
-        'Asunto',
+        'Unidad Jurisdiccional',
+        'Cantón',
+        'Provincia',
+        'Año de Inicio',
+        'Fecha de Emisión',
+        'Materia o Asunto',
+        'Tipo de Procedimiento',
+        'Género Actor',
+        'Género Demandado',
+        'Tipo Actor',
+        'Tipo Demandado',
+        'Recursos Horizontales',
+        'Tipo de Recurso Horizontal',
+        'Recursos Verticales',
+        'Tipo de Recurso Vertical',
         'Estado',
         'Razón/Veredicto',
         'Periodo Académico',
@@ -455,7 +483,21 @@ export class AdminPeriodosComponent implements OnInit, OnDestroy {
           s.nombre_estudiante || '',
           s.email_estudiante || '',
           s.numero_proceso || '',
+          s.unidad_jurisdiccional || '',
+          s.canton || '',
+          s.provincia || '',
+          s.anio_inicio || '',
+          s.fecha_emision || '',
           s.asunto || '',
+          s.tipo_procedimiento || '',
+          s.genero_actor || '',
+          s.genero_demandado || '',
+          s.tipo_actor || '',
+          s.tipo_demandado || '',
+          s.recursos_horizontales || '',
+          s.recurso_horizontal_tipo || '',
+          s.recursos_verticales || '',
+          s.recurso_vertical_tipo || '',
           s.estado || 'Pendiente',
           s.razon || '',
           s.periodo_academico || '',
@@ -480,29 +522,7 @@ export class AdminPeriodosComponent implements OnInit, OnDestroy {
       const worksheet = XLSX.utils.aoa_to_sheet(datosExcel);
 
       // Ajustar anchos de columna para que se vea bien
-      const wscols = [
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 20 },
-        { wch: 30 },
-        { wch: 15 },
-        { wch: 40 },
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 20 },
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 25 },
-        { wch: 25 },
-      ];
+      const wscols = Array(35).fill({ wch: 25 });
       worksheet['!cols'] = wscols;
 
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte');

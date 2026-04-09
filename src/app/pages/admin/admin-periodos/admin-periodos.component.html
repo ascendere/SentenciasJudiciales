@@ -123,12 +123,12 @@
             <!-- Reportes -->
             <div class="card" style="margin-top: 20px;">
                 <h3>📊 Reportes Históricos</h3>
-                <p class="info-text">Descargar sentencias de un ciclo pasado.</p>
+                <p class="info-text">Descargar sentencias de un ciclo específico.</p>
 
                 <div class="form-group">
                     <select [(ngModel)]="periodoReporteSeleccionado" class="select-full">
                         <option [ngValue]="null" disabled selected>-- Seleccionar Periodo --</option>
-                        <option *ngFor="let p of periodosPasados" [ngValue]="p">
+                        <option *ngFor="let p of periodosParaReporte" [ngValue]="p">
                             {{ p.nombre }}
                         </option>
                     </select>

@@ -24,7 +24,6 @@ body {
   margin: 25px 200px 0px 200px;
   border-radius: 10px;
   padding-bottom: 20px;
-  /* Añadido un poco de espacio abajo */
 }
 
 .dato-sent {
@@ -37,13 +36,30 @@ body {
   line-height: normal;
 }
 
-.dato-sent input {
+.form-card {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 0px 50px 20px 50px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.form-card-title {
+  font-weight: 600;
+  font-size: 1.1em;
+  border-bottom: 2px solid #004274;
+  padding-bottom: 8px;
+  margin-bottom: 15px;
+  color: #004274;
+  font-family: Poppins;
+}
+
+.dato-sent input:not([type="radio"]):not([type="file"]) {
   width: 100%;
   height: 30px;
-  /* Ajustado ligeramente para mejor tacto */
   border-radius: 5px;
   border: 1px solid #ccc;
-  /* Borde añadido para input */
   padding-left: 5px;
 }
 
@@ -151,17 +167,12 @@ body {
 
 .alert-content {
   position: absolute;
-  /* Cambiado a absoluto */
   top: 10px;
-  /* Ajusta esta posición según sea necesario */
   right: 20px;
-  /* Ajusta esta posición según sea necesario */
   z-index: 1000;
-  /* Asegúrate de que esté por encima de otros elementos */
   display: flex;
   justify-content: end;
   margin-top: 100px;
-  display: flex;
   flex-direction: column;
 }
 
@@ -170,15 +181,13 @@ body {
   flex-direction: column;
   align-items: flex-start;
   width: 200px;
-  /* Ajusta el ancho según sea necesario */
   padding: 10px;
   background: #BE3144;
   color: #FFF;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  cursor: pointer;
   text-align: left;
+  cursor: pointer;
   margin-bottom: 15px;
 }
 
@@ -193,7 +202,6 @@ body {
   padding-top: 20px;
 }
 
-/* Estilos para el mensaje cuando no hay archivo */
 .sin-archivo {
   margin-top: -20px;
   color: red;
@@ -204,7 +212,6 @@ body {
   line-height: normal;
 }
 
-/* Estilos para el mensaje cuando el archivo está cargado */
 .archivo-subido {
   margin-top: -20px;
   color: #044170;
@@ -261,13 +268,8 @@ body {
 }
 
 @keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .input-info {

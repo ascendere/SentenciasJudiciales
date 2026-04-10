@@ -17,10 +17,40 @@
   padding: 40px 36px 32px;
   max-width: 480px;
   width: 90%;
+  max-height: 85dvh;
   z-index: 1001;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
   text-align: center;
   animation: fadeInScale 0.2s ease-out;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Contenedor con scroll para el contenido */
+.modal-content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 20px;
+  padding-right: 8px; /* Espacio para el scrollbar */
+}
+
+/* Estilos para el scrollbar personalizado */
+.modal-content-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.modal-content-scroll::-webkit-scrollbar-thumb {
+  background: #172D5A;
+  border-radius: 10px;
+}
+
+.modal-content-scroll::-webkit-scrollbar-thumb:hover {
+  background: #0f1f3e;
 }
 
 /* Icono informativo */
@@ -37,7 +67,6 @@
   font-weight: 400;
   color: #333333;
   line-height: 1.6;
-  margin-bottom: 28px;
   white-space: pre-line;
 }
 

@@ -4,14 +4,16 @@
 
   <!-- Caja del modal -->
   <div class="modal-box" role="alertdialog" aria-modal="true" [attr.aria-label]="message">
-    <div class="modal-icon">
-      @if (isConfirm) {
-        <i class="fa-solid fa-circle-question"></i>
-      } @else {
-        <i class="fa-solid fa-circle-info"></i>
-      }
+    <div class="modal-content-scroll">
+      <div class="modal-icon">
+        @if (isConfirm) {
+          <i class="fa-solid fa-circle-question"></i>
+        } @else {
+          <i class="fa-solid fa-circle-info"></i>
+        }
+      </div>
+      <p class="modal-message">{{ message }}</p>
     </div>
-    <p class="modal-message">{{ message }}</p>
 
     @if (isConfirm) {
       <!-- Modo confirmación: botones Sí y No -->

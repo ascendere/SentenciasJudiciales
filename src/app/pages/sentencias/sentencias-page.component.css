@@ -278,3 +278,15 @@ body {
   margin-top: 0.25rem;
   display: block;
 }
+.question-icon {
+  color: #004274;
+  cursor: pointer;
+  margin-left: 5px;
+  font-size: 0.9em;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.question-icon:hover {
+  color: #002d50;
+  transform: scale(1.15);
+}

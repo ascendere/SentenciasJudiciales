@@ -9,7 +9,7 @@
 
   <div class="tittle-sent">
     <h4>SISTEMA JURÍDICO AVANZADO DE SENTENCIAS DE PRIMER NIVEL EN EL ECUADOR</h4>
-    <p><strong>Criterios para Dimensiones Cuantificables – Repositorio de Motivación de Sentencias de Primer Nivel en Ecuador</strong></p>
+    <!-- <p><strong>Criterios para Dimensiones Cuantificables – Repositorio de Motivación de Sentencias de Primer Nivel en Ecuador</strong></p> -->
   </div>
 
   <form (ngSubmit)="submitForm()">
@@ -63,7 +63,7 @@
       </div>
 
       <div class="dato-sent">
-        <label for="unidad_jurisdiccional">Unidad jurisdiccional:</label><br>
+        <label for="unidad_jurisdiccional">Unidad jurisdiccional: <i class="fa-solid fa-circle-question question-icon" (click)="mostrarInfoUnidad()"></i></label><br>
         <input type="text" id="unidad_jurisdiccional" name="unidad_jurisdiccional" [(ngModel)]="sentencia.unidad_jurisdiccional" required>
       </div>
 
@@ -84,7 +84,7 @@
           <input type="number" id="anio_inicio" name="anio_inicio" [(ngModel)]="sentencia.anio_inicio" min="2015" placeholder="Ej. 2015" required>
         </div>
         <div style="flex: 1;">
-          <label for="fecha_emision">Fecha en la que se emite la sentencia (finaliza la causa):</label><br>
+          <label for="fecha_emision">Fecha en la que se emite la sentencia:</label><br>
           <input type="date" id="fecha_emision" name="fecha_emision" [(ngModel)]="sentencia.fecha_emision" required>
         </div>
       </div>
@@ -95,7 +95,7 @@
       <h5 class="form-card-title">Materia y Procedimiento</h5>
       
       <div class="dato-sent">
-        <label><strong>Materia o asunto de la sentencia (se selecciona solo una):</strong></label><br>
+        <label><strong>Materia o asunto de la sentencia:</strong></label><br>
         <div class="radio-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top:10px;">
           <label *ngFor="let m of materiasDisponibles">
             <input type="radio" [value]="m" name="materia_asunto" [(ngModel)]="sentencia.asunto" required> {{m}}
@@ -104,7 +104,7 @@
       </div>
 
       <div class="dato-sent" style="margin-top: 25px;">
-        <label><strong>Categoría del tipo de procedimiento:</strong></label><br>
+        <label><strong>Tipo de procedimiento:</strong></label><br>
         <div class="radio-group" style="display: flex; gap: 15px; flex-wrap: wrap; margin-top:10px;">
           <label><input type="radio" value="Civil" name="cat_proc" [(ngModel)]="opcion_categoria_procedimiento" (change)="opcion_tipo_procedimiento = ''; sentencia.tipo_procedimiento = ''" required> Civil</label>
           <label><input type="radio" value="Penal" name="cat_proc" [(ngModel)]="opcion_categoria_procedimiento" (change)="opcion_tipo_procedimiento = ''; sentencia.tipo_procedimiento = ''" required> Penal</label>
@@ -115,7 +115,7 @@
       </div>
 
       <div class="dato-sent" style="margin-top: 20px;" *ngIf="opcion_categoria_procedimiento">
-        <label *ngIf="opcion_categoria_procedimiento !== 'Otro'"><strong>Tipo de procedimiento (se elige 1):</strong></label><br>
+        <label *ngIf="opcion_categoria_procedimiento !== 'Otro'"><strong>Especifique:</strong></label><br>
         
         <div style="margin-top:10px;">
           
@@ -208,7 +208,7 @@
         <div class="radio-group" style="display: flex; gap: 15px; margin-top: 10px;">
           <label><input type="radio" value="Persona natural" name="tipo_actor" [(ngModel)]="opcion_tipo_actor" (change)="manejarCambioOpcion('opcion_tipo_actor', 'tipo_actor')" required> Persona natural</label>
           <label><input type="radio" value="Persona jurídica" name="tipo_actor" [(ngModel)]="opcion_tipo_actor" (change)="manejarCambioOpcion('opcion_tipo_actor', 'tipo_actor')" required> Persona jurídica</label>
-          <label><input type="radio" value="Otro" name="tipo_actor" [(ngModel)]="opcion_tipo_actor" (change)="manejarCambioOpcion('opcion_tipo_actor', 'tipo_actor')" required> Especifique</label>
+          <!-- <label><input type="radio" value="Otro" name="tipo_actor" [(ngModel)]="opcion_tipo_actor" (change)="manejarCambioOpcion('opcion_tipo_actor', 'tipo_actor')" required> Especifique</label> -->
         </div>
         <input type="text" *ngIf="opcion_tipo_actor === 'Otro'" name="tipo_actor_otro" [(ngModel)]="sentencia.tipo_actor" placeholder="Especificar tipo actor" required style="margin-top:10px;">
       </div>
@@ -219,7 +219,7 @@
         <div class="radio-group" style="display: flex; gap: 15px; margin-top: 10px;">
           <label><input type="radio" value="Persona natural" name="tipo_demandado" [(ngModel)]="opcion_tipo_demandado" (change)="manejarCambioOpcion('opcion_tipo_demandado', 'tipo_demandado')" required> Persona natural</label>
           <label><input type="radio" value="Persona jurídica" name="tipo_demandado" [(ngModel)]="opcion_tipo_demandado" (change)="manejarCambioOpcion('opcion_tipo_demandado', 'tipo_demandado')" required> Persona jurídica</label>
-          <label><input type="radio" value="Otro" name="tipo_demandado" [(ngModel)]="opcion_tipo_demandado" (change)="manejarCambioOpcion('opcion_tipo_demandado', 'tipo_demandado')" required> Especifique</label>
+          <!-- <label><input type="radio" value="Otro" name="tipo_demandado" [(ngModel)]="opcion_tipo_demandado" (change)="manejarCambioOpcion('opcion_tipo_demandado', 'tipo_demandado')" required> Especifique</label> -->
         </div>
         <input type="text" *ngIf="opcion_tipo_demandado === 'Otro'" name="tipo_demandado_otro" [(ngModel)]="sentencia.tipo_demandado" placeholder="Especificar tipo demandado" required style="margin-top:10px;">
       </div>

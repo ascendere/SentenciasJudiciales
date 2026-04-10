@@ -84,6 +84,7 @@ export class SentenciasPageComponent implements OnInit {
   mostrarMensajeExito: boolean = false;
   alertModalVisible: boolean = false;
   alertModalMessage: string = '';
+  isInfoOnly: boolean = false;
   archivo: File | null = null;
 
   // VARIABLES PARA EL BUSCADOR DE DOCENTES
@@ -575,7 +576,16 @@ export class SentenciasPageComponent implements OnInit {
 
   onAlertModalClose(): void {
     this.alertModalVisible = false;
-    this.router.navigate(['/principal']);
+    if (!this.isInfoOnly) {
+      this.router.navigate(['/principal']);
+    }
+    this.isInfoOnly = false;
+  }
+
+  mostrarInfoUnidad(): void {
+    this.alertModalMessage = 'Dependencia judicial que consta en la sentencia (ej.: Unidad Judicial Civil de Loja)';
+    this.alertModalVisible = true;
+    this.isInfoOnly = true;
   }
 
   cerrarAlerta(index: number) {

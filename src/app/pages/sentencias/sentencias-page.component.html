@@ -54,9 +54,9 @@
 
     <!-- DATOS BÁSICOS -->
     <div class="form-card">
-      <h5 class="form-card-title">Datos Básicos del Proceso</h5>
+      <h5 class="form-card-title">Datos Básicos de la Sentencia</h5>
       <div class="dato-sent">
-        <label class="numero-proceso" for="process">Número de Proceso:</label><br>
+        <label class="numero-proceso" for="process">Número de Sentencia:</label><br>
         <input class="numero-proceso" type="text" id="process" name="process" [(ngModel)]="sentencia.numero_proceso"
           (keypress)="validarNumeroProcess($event)" (input)="formatearNumeroProcess($event)" required><br>
         <small class="input-info">Únicamente se admite números y guiones "-"</small>
@@ -225,7 +225,7 @@
       </div>
 
       <!-- RECURSOS HORIZONTALES -->
-      <div class="dato-sent">
+      <!-- <div class="dato-sent">
         <label>Interposición de recursos horizontales:</label><br>
         <div class="radio-group" style="display: flex; gap: 15px; margin-top: 10px;">
           <label><input type="radio" value="si" name="rh" [(ngModel)]="sentencia.recursos_horizontales" required> Sí</label>
@@ -243,10 +243,10 @@
           </div>
           <input type="text" *ngIf="opcion_recurso_horizontal_tipo === 'Otro'" name="rh_otro" [(ngModel)]="sentencia.recurso_horizontal_tipo" placeholder="Especificar recurso horizontal" required style="margin-top:10px;">
         </div>
-      </div>
+      </div> -->
 
       <!-- RECURSOS VERTICALES -->
-      <div class="dato-sent">
+      <!-- <div class="dato-sent">
         <label>Interposición de recursos verticales:</label><br>
         <div class="radio-group" style="display: flex; gap: 15px; margin-top: 10px;">
           <label><input type="radio" value="si" name="rv" [(ngModel)]="sentencia.recursos_verticales" required> Sí</label>
@@ -261,7 +261,7 @@
           </div>
           <input type="text" *ngIf="opcion_recurso_vertical_tipo === 'Otro'" name="rv_otro" [(ngModel)]="sentencia.recurso_vertical_tipo" placeholder="Especificar recurso vertical" required style="margin-top:10px;">
         </div>
-      </div>
+      </div> -->
 
     </div>
 

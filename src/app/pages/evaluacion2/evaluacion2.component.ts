@@ -147,7 +147,8 @@ export class Evaluacion2Component implements OnInit {
     ];
     let completados = 0;
     for (const campo of sectionsToCheck) {
-      if (data[campo] === 'Correcto' || data[campo] === 'Incorrecto') {
+      const val = data[campo];
+      if (val === 'Correcto' || val === 'Validado' || val === 'Incorrecto' || val === 'No validado') {
         completados++;
       }
     }
@@ -500,32 +501,42 @@ export class Evaluacion2Component implements OnInit {
   }
 
   setCalificacion(controlName: string, value: string) {
-    this.evaluacion2Form.get(controlName)?.setValue(value);
-    this.buttonStates[controlName] = value;
+    const mappedValue = value === 'Correcto' ? 'Validado' : (value === 'Incorrecto' ? 'No validado' : value);
+    this.evaluacion2Form.get(controlName)?.setValue(mappedValue);
+    this.buttonStates[controlName] = mappedValue;
     this.saveFormChanges();
     this.changeDetectorRef.detectChanges();
   }
 
   setCalificacion2(controlName: string, value: string) {
-    this.evaluacion2Form.get(controlName)?.setValue(value);
-    this.buttonStates[controlName] = value;
+    const mappedValue = value === 'Correcto' ? 'Validado' : (value === 'Incorrecto' ? 'No validado' : value);
+    this.evaluacion2Form.get(controlName)?.setValue(mappedValue);
+    this.buttonStates[controlName] = mappedValue;
     this.saveFormChanges();
     this.changeDetectorRef.detectChanges();
   }
 
   isButtonSelected2(controlName: string, value: string): boolean {
-    return this.evaluacion2Form.get(controlName)?.value === value;
+    const currentVal = this.evaluacion2Form.get(controlName)?.value;
+    if (value === 'Correcto') return currentVal === 'Validado' || currentVal === 'Correcto';
+    if (value === 'Incorrecto') return currentVal === 'No validado' || currentVal === 'Incorrecto';
+    return currentVal === value;
   }
 
 
   isButtonSelected(controlPath: string, calificacion: string): boolean {
-    return this.buttonStates[controlPath] === calificacion;
+    const currentVal = this.buttonStates[controlPath];
+    if (calificacion === 'Correcto') return currentVal === 'Validado' || currentVal === 'Correcto';
+    if (calificacion === 'Incorrecto') return currentVal === 'No validado' || currentVal === 'Incorrecto';
+    return currentVal === calificacion;
   }
 
   getCalificacionValue(controlName: string): string {
     const value = this.evaluacion2Form.get(controlName)?.value;
-    // Traduce 'No Calificado' a 'Sin validar' solo para visualización
+    // Traduce 'No Calificado' a 'Pendiente de validar' solo para visualización
     if (!value || value === 'No Calificado' || value === 'No calificado') return 'Pendiente de validar';
+    if (value === 'Correcto') return 'Validado';
+    if (value === 'Incorrecto') return 'No validado';
     return value;
   }
 

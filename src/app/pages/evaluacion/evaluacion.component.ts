@@ -1059,8 +1059,10 @@ export class EvaluacionComponent implements OnInit {
     } else {
       controlPath = `${section}.${controlName}`;
     }
-    // Ahora la función solo lee del objeto buttonStates, que es lo correcto.
-    return this.buttonStates[controlPath] === value;
+    const currentVal = this.buttonStates[controlPath];
+    if (value === 'Correcto') return currentVal === 'Validado' || currentVal === 'Correcto';
+    if (value === 'Incorrecto') return currentVal === 'No validado' || currentVal === 'Incorrecto';
+    return currentVal === value;
   }
 
   loadCalificaciones(data: any) {
@@ -1207,16 +1209,19 @@ export class EvaluacionComponent implements OnInit {
   getCalificacionValue(controlPath: string): string {
     const control = this.evaluacionForm.get(controlPath)
     const value = control?.value;
-    // Traduce 'No Calificado' a 'Sin validar' solo para visualización
+    // Traduce 'No Calificado' a 'Pendiente de validar' solo para visualización
     if (!value || value === 'No Calificado' || value === 'No calificado') return 'Pendiente de validar';
+    if (value === 'Correcto') return 'Validado';
+    if (value === 'Incorrecto') return 'No validado';
     return value;
   }
 
   setCalificacion(controlPath: string, calificacion: string): void {
     const control = this.evaluacionForm.get(controlPath)
     if (control) {
-      control.setValue(calificacion)
-      this.selectedButtons["motivationType"] = calificacion
+      const mappedValue = calificacion === 'Correcto' ? 'Validado' : (calificacion === 'Incorrecto' ? 'No validado' : calificacion);
+      control.setValue(mappedValue)
+      this.selectedButtons["motivationType"] = mappedValue
     }
   }
 
@@ -1240,7 +1245,8 @@ export class EvaluacionComponent implements OnInit {
   }
 
   selectButton(section: string, controlName: string, value: string) {
-    this.calificaciones[section] = value
+    const mappedValue = value === 'Correcto' ? 'Validado' : (value === 'Incorrecto' ? 'No validado' : value);
+    this.calificaciones[section] = mappedValue
     let controlPath = ""
     if (section === "motivationType" || section === "finalMotivation") {
       controlPath = controlName
@@ -1249,8 +1255,8 @@ export class EvaluacionComponent implements OnInit {
     }
     const control = this.evaluacionForm.get(controlPath)
     if (control) {
-      control.setValue(value, { emitEvent: false })
-      this.buttonStates[controlPath] = value
+      control.setValue(mappedValue, { emitEvent: false })
+      this.buttonStates[controlPath] = mappedValue
     }
     this.changeDetectorRef.detectChanges()
   }
@@ -1508,7 +1514,7 @@ export class EvaluacionComponent implements OnInit {
           const control = this.evaluacionForm.get(item);
           val = control?.value;
         }
-        if (val === 'Correcto' || val === 'Incorrecto') {
+        if (val === 'Correcto' || val === 'Validado' || val === 'Incorrecto' || val === 'No validado') {
           completed++;
         }
       }

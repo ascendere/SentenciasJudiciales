@@ -88,8 +88,8 @@
       </div>
       <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
         <div class="calificacion-display" [ngClass]="{
-          'calificacion-correcta': getCalificacionValue('motivationType_calificacion') === 'Correcto',
-          'calificacion-incorrecta': getCalificacionValue('motivationType_calificacion') === 'Incorrecto',
+          'calificacion-correcta': getCalificacionValue('motivationType_calificacion') === 'Validado',
+          'calificacion-incorrecta': getCalificacionValue('motivationType_calificacion') === 'No validado',
           'calificacion-no-calificado': getCalificacionValue('motivationType_calificacion') === 'Pendiente de validar'
         }">
           {{ getCalificacionValue('motivationType_calificacion') }}
@@ -153,8 +153,8 @@
       }
       <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
         <div class="calificacion-display" [ngClass]="{
-          'calificacion-correcta': getCalificacionValue('nonexistinence.normative_calificacion') === 'Correcto',
-          'calificacion-incorrecta': getCalificacionValue('nonexistinence.normative_calificacion') === 'Incorrecto',
+          'calificacion-correcta': getCalificacionValue('nonexistinence.normative_calificacion') === 'Validado',
+          'calificacion-incorrecta': getCalificacionValue('nonexistinence.normative_calificacion') === 'No validado',
           'calificacion-no-calificado': getCalificacionValue('nonexistinence.normative_calificacion') === 'Pendiente de validar'
         }">
           {{ getCalificacionValue('nonexistinence.normative_calificacion') }}
@@ -206,8 +206,8 @@
       }
       <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
         <div class="calificacion-display" *ngIf="saved" [ngClass]="{
-          'calificacion-correcta': getCalificacionValue('nonexistinence.factual_calificacion') === 'Correcto',
-          'calificacion-incorrecta': getCalificacionValue('nonexistinence.factual_calificacion') === 'Incorrecto',
+          'calificacion-correcta': getCalificacionValue('nonexistinence.factual_calificacion') === 'Validado',
+          'calificacion-incorrecta': getCalificacionValue('nonexistinence.factual_calificacion') === 'No validado',
           'calificacion-no-calificado': getCalificacionValue('nonexistinence.factual_calificacion') === 'Pendiente de validar'
         }">
           {{ getCalificacionValue('nonexistinence.factual_calificacion') }}
@@ -268,8 +268,8 @@
       }
       <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
         <div class="calificacion-display" [ngClass]="{
-          'calificacion-correcta': getCalificacionValue('insufficiency.normative_calificacion') === 'Correcto',
-          'calificacion-incorrecta': getCalificacionValue('insufficiency.normative_calificacion') === 'Incorrecto',
+          'calificacion-correcta': getCalificacionValue('insufficiency.normative_calificacion') === 'Validado',
+          'calificacion-incorrecta': getCalificacionValue('insufficiency.normative_calificacion') === 'No validado',
           'calificacion-no-calificado': getCalificacionValue('insufficiency.normative_calificacion') === 'Pendiente de validar'
         }">
           {{ getCalificacionValue('insufficiency.normative_calificacion') }}
@@ -321,8 +321,8 @@
       }
       <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
         <div class="calificacion-display" [ngClass]="{
-            'calificacion-correcta': getCalificacionValue('insufficiency.factual_calificacion') === 'Correcto',
-            'calificacion-incorrecta': getCalificacionValue('insufficiency.factual_calificacion') === 'Incorrecto',
+            'calificacion-correcta': getCalificacionValue('insufficiency.factual_calificacion') === 'Validado',
+            'calificacion-incorrecta': getCalificacionValue('insufficiency.factual_calificacion') === 'No validado',
             'calificacion-no-calificado': getCalificacionValue('insufficiency.factual_calificacion') === 'Pendiente de validar'
           }">
           {{ getCalificacionValue('insufficiency.factual_calificacion') }}
@@ -387,8 +387,8 @@
         </div>
         <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
           <div class="calificacion-display" [ngClass]="{
-            'calificacion-correcta': getCalificacionValue('appearance.motivationalHabit_calificacion') === 'Correcto',
-            'calificacion-incorrecta': getCalificacionValue('appearance.motivationalHabit_calificacion') === 'Incorrecto',
+            'calificacion-correcta': getCalificacionValue('appearance.motivationalHabit_calificacion') === 'Validado',
+            'calificacion-incorrecta': getCalificacionValue('appearance.motivationalHabit_calificacion') === 'No validado',
             'calificacion-no-calificado': getCalificacionValue('appearance.motivationalHabit_calificacion') === 'Pendiente de validar'
           }">
             {{ getCalificacionValue('appearance.motivationalHabit_calificacion') }}
@@ -446,8 +446,8 @@
         }
         <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
           <div class="calificacion-display" [ngClass]="{
-            'calificacion-correcta': getCalificacionValue('appearance.incoherence.logicaNormative_calificacion') === 'Correcto',
-            'calificacion-incorrecta': getCalificacionValue('appearance.incoherence.logicaNormative_calificacion') === 'Incorrecto',
+            'calificacion-correcta': getCalificacionValue('appearance.incoherence.logicaNormative_calificacion') === 'Validado',
+            'calificacion-incorrecta': getCalificacionValue('appearance.incoherence.logicaNormative_calificacion') === 'No validado',
             'calificacion-no-calificado': getCalificacionValue('appearance.incoherence.logicaNormative_calificacion') === 'Pendiente de validar'
           }">
             {{ getCalificacionValue('appearance.incoherence.logicaNormative_calificacion') }}
@@ -495,8 +495,8 @@
         }
         <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
           <div class="calificacion-display" [ngClass]="{
-            'calificacion-correcta': getCalificacionValue('appearance.incoherence.decisionalNormative_calificacion') === 'Correcto',
-            'calificacion-incorrecta': getCalificacionValue('appearance.incoherence.decisionalNormative_calificacion') === 'Incorrecto',
+            'calificacion-correcta': getCalificacionValue('appearance.incoherence.decisionalNormative_calificacion') === 'Validado',
+            'calificacion-incorrecta': getCalificacionValue('appearance.incoherence.decisionalNormative_calificacion') === 'No validado',
             'calificacion-no-calificado': getCalificacionValue('appearance.incoherence.decisionalNormative_calificacion') === 'Pendiente de validar'
           }">
             {{ getCalificacionValue('appearance.incoherence.decisionalNormative_calificacion') }}
@@ -549,8 +549,8 @@
         }
         <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
           <div class="calificacion-display" [ngClass]="{
-            'calificacion-correcta': getCalificacionValue('appearance.incoherence.logicalFactual_calificacion') === 'Correcto',
-            'calificacion-incorrecta': getCalificacionValue('appearance.incoherence.logicalFactual_calificacion') === 'Incorrecto',
+            'calificacion-correcta': getCalificacionValue('appearance.incoherence.logicalFactual_calificacion') === 'Validado',
+            'calificacion-incorrecta': getCalificacionValue('appearance.incoherence.logicalFactual_calificacion') === 'No validado',
             'calificacion-no-calificado': getCalificacionValue('appearance.incoherence.logicalFactual_calificacion') === 'Pendiente de validar'
           }">
             {{ getCalificacionValue('appearance.incoherence.logicalFactual_calificacion') }}
@@ -603,8 +603,8 @@
 
         <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
           <div class="calificacion-display" [ngClass]="{
-            'calificacion-correcta': getCalificacionValue('appearance.incoherence.decisionalFactual_calificacion') === 'Correcto',
-            'calificacion-incorrecta': getCalificacionValue('appearance.incoherence.decisionalFactual_calificacion') === 'Incorrecto',
+            'calificacion-correcta': getCalificacionValue('appearance.incoherence.decisionalFactual_calificacion') === 'Validado',
+            'calificacion-incorrecta': getCalificacionValue('appearance.incoherence.decisionalFactual_calificacion') === 'No validado',
             'calificacion-no-calificado': getCalificacionValue('appearance.incoherence.decisionalFactual_calificacion') === 'Pendiente de validar'
           }">
             {{ getCalificacionValue('appearance.incoherence.decisionalFactual_calificacion') }}
@@ -655,8 +655,8 @@
         }
         <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
           <div class="calificacion-display" [ngClass]="{
-            'calificacion-correcta': getCalificacionValue('appearance.incoherence.motivation_calificacion') === 'Correcto',
-            'calificacion-incorrecta': getCalificacionValue('appearance.incoherence.motivation_calificacion') === 'Incorrecto',
+            'calificacion-correcta': getCalificacionValue('appearance.incoherence.motivation_calificacion') === 'Validado',
+            'calificacion-incorrecta': getCalificacionValue('appearance.incoherence.motivation_calificacion') === 'No validado',
             'calificacion-no-calificado': getCalificacionValue('appearance.incoherence.motivation_calificacion') === 'Pendiente de validar'
           }">
             {{ getCalificacionValue('appearance.incoherence.motivation_calificacion') }}
@@ -723,8 +723,8 @@
 
         <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
           <div class="calificacion-display" [ngClass]="{
-            'calificacion-correcta': getCalificacionValue('appearance.inatinence.inatinenceJuridical_calificacion') === 'Correcto',
-            'calificacion-incorrecta': getCalificacionValue('appearance.inatinence.inatinenceJuridical_calificacion') === 'Incorrecto',
+            'calificacion-correcta': getCalificacionValue('appearance.inatinence.inatinenceJuridical_calificacion') === 'Validado',
+            'calificacion-incorrecta': getCalificacionValue('appearance.inatinence.inatinenceJuridical_calificacion') === 'No validado',
             'calificacion-no-calificado': getCalificacionValue('appearance.inatinence.inatinenceJuridical_calificacion') === 'Pendiente de validar'
           }">
             {{ getCalificacionValue('appearance.inatinence.inatinenceJuridical_calificacion') }}
@@ -783,8 +783,8 @@
         }
         <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
           <div class="calificacion-display" [ngClass]="{
-            'calificacion-correcta': getCalificacionValue('appearance.inatinence.inatinenceFactual_calificacion') === 'Correcto',
-            'calificacion-incorrecta': getCalificacionValue('appearance.inatinence.inatinenceFactual_calificacion') === 'Incorrecto',
+            'calificacion-correcta': getCalificacionValue('appearance.inatinence.inatinenceFactual_calificacion') === 'Validado',
+            'calificacion-incorrecta': getCalificacionValue('appearance.inatinence.inatinenceFactual_calificacion') === 'No validado',
             'calificacion-no-calificado': getCalificacionValue('appearance.inatinence.inatinenceFactual_calificacion') === 'Pendiente de validar'
           }">
             {{ getCalificacionValue('appearance.inatinence.inatinenceFactual_calificacion') }}
@@ -843,8 +843,8 @@
         }
         <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
           <div class="calificacion-display" [ngClass]="{
-            'calificacion-correcta': getCalificacionValue('appearance.incomprehensibility.incomprehensibilityJuridical_calificacion') === 'Correcto',
-            'calificacion-incorrecta': getCalificacionValue('appearance.incomprehensibility.incomprehensibilityJuridical_calificacion') === 'Incorrecto',
+            'calificacion-correcta': getCalificacionValue('appearance.incomprehensibility.incomprehensibilityJuridical_calificacion') === 'Validado',
+            'calificacion-incorrecta': getCalificacionValue('appearance.incomprehensibility.incomprehensibilityJuridical_calificacion') === 'No validado',
             'calificacion-no-calificado': getCalificacionValue('appearance.incomprehensibility.incomprehensibilityJuridical_calificacion') === 'Pendiente de validar'
           }">
             {{ getCalificacionValue('appearance.incomprehensibility.incomprehensibilityJuridical_calificacion') }}
@@ -905,8 +905,8 @@
 
         <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
           <div class="calificacion-display" [ngClass]="{
-            'calificacion-correcta': getCalificacionValue('appearance.incomprehensibility.incomprehensibilityFactual_calificacion') === 'Correcto',
-            'calificacion-incorrecta': getCalificacionValue('appearance.incomprehensibility.incomprehensibilityFactual_calificacion') === 'Incorrecto',
+            'calificacion-correcta': getCalificacionValue('appearance.incomprehensibility.incomprehensibilityFactual_calificacion') === 'Validado',
+            'calificacion-incorrecta': getCalificacionValue('appearance.incomprehensibility.incomprehensibilityFactual_calificacion') === 'No validado',
             'calificacion-no-calificado': getCalificacionValue('appearance.incomprehensibility.incomprehensibilityFactual_calificacion') === 'Pendiente de validar'
           }">
             {{ getCalificacionValue('appearance.incomprehensibility.incomprehensibilityFactual_calificacion') }}
@@ -970,8 +970,8 @@
         }
         <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
           <div class="calificacion-display" [ngClass]="{
-            'calificacion-correcta': getCalificacionValue('appearance.incongruity.normativeParticipants_calificacion') === 'Correcto',
-            'calificacion-incorrecta': getCalificacionValue('appearance.incongruity.normativeParticipants_calificacion') === 'Incorrecto',
+            'calificacion-correcta': getCalificacionValue('appearance.incongruity.normativeParticipants_calificacion') === 'Validado',
+            'calificacion-incorrecta': getCalificacionValue('appearance.incongruity.normativeParticipants_calificacion') === 'No validado',
             'calificacion-no-calificado': getCalificacionValue('appearance.incongruity.normativeParticipants_calificacion') === 'Pendiente de validar'
           }">
             {{ getCalificacionValue('appearance.incongruity.normativeParticipants_calificacion') }}
@@ -1025,8 +1025,8 @@
         }
         <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
           <div class="calificacion-display" [ngClass]="{
-            'calificacion-correcta': getCalificacionValue('appearance.incongruity.normativeLaw_calificacion') === 'Correcto',
-            'calificacion-incorrecta': getCalificacionValue('appearance.incongruity.normativeLaw_calificacion') === 'Incorrecto',
+            'calificacion-correcta': getCalificacionValue('appearance.incongruity.normativeLaw_calificacion') === 'Validado',
+            'calificacion-incorrecta': getCalificacionValue('appearance.incongruity.normativeLaw_calificacion') === 'No validado',
             'calificacion-no-calificado': getCalificacionValue('appearance.incongruity.normativeLaw_calificacion') === 'Pendiente de validar'
           }">
             {{ getCalificacionValue('appearance.incongruity.normativeLaw_calificacion') }}
@@ -1082,8 +1082,8 @@
         }
         <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
           <div class="calificacion-display" [ngClass]="{
-            'calificacion-correcta': getCalificacionValue('appearance.incongruity.factualParticipants_calificacion') === 'Correcto',
-            'calificacion-incorrecta': getCalificacionValue('appearance.incongruity.factualParticipants_calificacion') === 'Incorrecto',
+            'calificacion-correcta': getCalificacionValue('appearance.incongruity.factualParticipants_calificacion') === 'Validado',
+            'calificacion-incorrecta': getCalificacionValue('appearance.incongruity.factualParticipants_calificacion') === 'No validado',
             'calificacion-no-calificado': getCalificacionValue('appearance.incongruity.factualParticipants_calificacion') === 'Pendiente de validar'
           }">
             {{ getCalificacionValue('appearance.incongruity.factualParticipants_calificacion') }}
@@ -1137,8 +1137,8 @@
         }
         <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
           <div class="calificacion-display" [ngClass]="{
-            'calificacion-correcta': getCalificacionValue('appearance.incongruity.factualLaw_calificacion') === 'Correcto',
-            'calificacion-incorrecta': getCalificacionValue('appearance.incongruity.factualLaw_calificacion') === 'Incorrecto',
+            'calificacion-correcta': getCalificacionValue('appearance.incongruity.factualLaw_calificacion') === 'Validado',
+            'calificacion-incorrecta': getCalificacionValue('appearance.incongruity.factualLaw_calificacion') === 'No validado',
             'calificacion-no-calificado': getCalificacionValue('appearance.incongruity.factualLaw_calificacion') === 'Pendiente de validar'
           }">
             {{ getCalificacionValue('appearance.incongruity.factualLaw_calificacion') }}
@@ -1207,8 +1207,8 @@
 
         <div *ngIf="!isDocente && evaluacionForm.get('saved')?.value" class="calificaciones">
           <div class="calificacion-display" [ngClass]="{
-        'calificacion-correcta': getCalificacionValue('finalMotivation_calificacion') === 'Correcto',
-        'calificacion-incorrecta': getCalificacionValue('finalMotivation_calificacion') === 'Incorrecto',
+        'calificacion-correcta': getCalificacionValue('finalMotivation_calificacion') === 'Validado',
+        'calificacion-incorrecta': getCalificacionValue('finalMotivation_calificacion') === 'No validado',
         'calificacion-no-calificado': getCalificacionValue('finalMotivation_calificacion') === 'Pendiente de validar'
       }">
             {{ getCalificacionValue('finalMotivation_calificacion') }}

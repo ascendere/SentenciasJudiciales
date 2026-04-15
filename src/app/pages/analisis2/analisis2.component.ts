@@ -207,7 +207,7 @@ export class Analisis2Component implements OnInit {
 
     sections.forEach(section => {
       const calificacion = data[`${section}_calificacion` as keyof Analisis2];
-      if (calificacion === 'Correcto' || calificacion === 'Incorrecto') {
+      if (calificacion === 'Correcto' || calificacion === 'Validado' || calificacion === 'Incorrecto' || calificacion === 'No validado') {
         this.selectedButtons[section] = calificacion;
       }
     });
@@ -398,15 +398,18 @@ export class Analisis2Component implements OnInit {
   }
 
   setCalificacion(sectionId: string, calificacion: string) {
-    this.analisis2Form.get(sectionId + '_calificacion')?.setValue(calificacion);
-    this.selectedButtons[sectionId] = calificacion;
+    const mappedValue = calificacion === 'Correcto' ? 'Validado' : (calificacion === 'Incorrecto' ? 'No validado' : calificacion);
+    this.analisis2Form.get(sectionId + '_calificacion')?.setValue(mappedValue);
+    this.selectedButtons[sectionId] = mappedValue;
   }
 
   getCalificacionValue(controlName: string): string {
     const control = this.analisis2Form.get(controlName);
     const value = control?.value;
-    // Traduce 'No Calificado' a 'Sin validar' solo para visualización
+    // Traduce 'No Calificado' a 'Pendiente de validar' solo para visualización
     if (!value || value === 'No Calificado' || value === 'No calificado') return 'Pendiente de validar';
+    if (value === 'Correcto') return 'Validado';
+    if (value === 'Incorrecto') return 'No validado';
     return value;
   }
 

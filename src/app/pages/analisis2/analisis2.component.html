@@ -35,8 +35,8 @@
     ]; let i = index">
       <div *ngIf="!isDocente && analisis2Form.get('saved')?.value" class="calificaciones">
         <div class="calificacion-display" [ngClass]="{
-        'calificacion-correcta': getCalificacionValue(section.id + '_calificacion') === 'Correcto',
-        'calificacion-incorrecta': getCalificacionValue(section.id + '_calificacion') === 'Incorrecto',
+        'calificacion-correcta': getCalificacionValue(section.id + '_calificacion') === 'Validado',
+        'calificacion-incorrecta': getCalificacionValue(section.id + '_calificacion') === 'No validado',
         'calificacion-no-calificado': getCalificacionValue(section.id + '_calificacion') === 'Pendiente de validar'
       }">
           {{ getCalificacionValue(section.id + '_calificacion') }}
@@ -47,13 +47,13 @@
           <div *ngIf="isDocente">
             <div class="bttns-rate">
               <button class="correct-button" type="button"
-                [ngClass]="{'selected': selectedButtons[section.id] === 'Correcto'}"
+                [ngClass]="{'selected': selectedButtons[section.id] === 'Validado' || selectedButtons[section.id] === 'Correcto'}"
                 (click)="setCalificacion(section.id, 'Correcto')">Validar</button>
               <button class="incorrect-button" type="button"
-                [ngClass]="{'selected': selectedButtons[section.id] === 'Incorrecto'}"
+                [ngClass]="{'selected': selectedButtons[section.id] === 'No validado' || selectedButtons[section.id] === 'Incorrecto'}"
                 (click)="setCalificacion(section.id, 'Incorrecto')">No validar</button>
             </div>
-            @if (selectedButtons[section.id] === 'Incorrecto') {
+            @if (selectedButtons[section.id] === 'No validado' || selectedButtons[section.id] === 'Incorrecto') {
               <div>
                 <app-caja-texto [formControlName]="section.id + '_retroalimentacion'"
                   [titulo]="'Justifique... *'"></app-caja-texto>

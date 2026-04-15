@@ -106,12 +106,6 @@ export class AnalisisComponent implements OnInit {
       'problem_question': false,
       'problem_decision': false
     };
-    this.analisisForm.valueChanges.subscribe(() => {
-      if (this.dataLoaded && !this.isSubmitting) {
-        this.saved = false;
-        this.analisisForm.patchValue({ saved: false }, { emitEvent: false });
-      }
-    });
     this.route.queryParamMap.subscribe(params => {
       this.numero_proceso = params.get('numero_proceso') || '';
       this.asunto = params.get('asunto') || '';
@@ -124,9 +118,6 @@ export class AnalisisComponent implements OnInit {
       this.inicializarMostrarRetroalimentacion();
       this.loadUserData();
       //this.checkDocenteSaved();
-      setTimeout(() => {
-        this.checkLockStatus();
-      }, 1000);
     });
   }
 
@@ -142,7 +133,7 @@ export class AnalisisComponent implements OnInit {
   checkLockStatus() {
     this.firestore.collection('locks').doc(this.numero_proceso).valueChanges().subscribe((data: any) => {
       if (data && data.locked) {
-        this.disableFormControls(this.analisisForm); // Disable the form if it's locked
+        this.disableFormControls(this.analisisForm);
       }
     });
   }
@@ -160,7 +151,7 @@ export class AnalisisComponent implements OnInit {
   disableFormControls(formGroup: FormGroup | FormArray) {
     Object.keys(formGroup.controls).forEach(key => {
       const control = formGroup.get(key);
-      control?.disable(); // Disable the control
+      control?.disable({ emitEvent: false }); // Disable the control without triggering valueChanges
       if (control instanceof FormGroup || control instanceof FormArray) {
         this.disableFormControls(control); // Recursively disable nested controls
       }
@@ -281,6 +272,8 @@ export class AnalisisComponent implements OnInit {
   loadAnalisisData() {
     this.firestore.collection('analisis').doc(this.numero_proceso).valueChanges()
       .subscribe((analisis: any) => {
+        // Bloqueamos detecciones de cambios mientras cargamos/limpiamos
+        this.dataLoaded = false;
         if (analisis) {
           // Actualizar valores básicos del formulario
           this.analisisForm.patchValue({
@@ -295,7 +288,6 @@ export class AnalisisComponent implements OnInit {
           while (this.facticas.length !== 0) {
             this.facticas.removeAt(0);
           }
-          // Cargar problema
           if (analisis.problem_question) {
             const problemQuestion = {
               pregunta: analisis.problem_question.pregunta || '',
@@ -303,7 +295,7 @@ export class AnalisisComponent implements OnInit {
               retroalimentacion: analisis.problem_question.retroalimentacion || '',
               showCalificar: analisis.problem_question.showCalificar || false
             };
-            this.analisisForm.get('problem_question')?.patchValue(problemQuestion);
+            this.analisisForm.get('problem_question')?.patchValue(problemQuestion, { emitEvent: false });
             this.mostrarRetroalimentacionPregunta = false;
           }
           // Cargar decision
@@ -314,7 +306,7 @@ export class AnalisisComponent implements OnInit {
               retroalimentacion: analisis.problem_decision.retroalimentacion || '',
               showCalificar: analisis.problem_decision.showCalificar || false
             };
-            this.analisisForm.get('problem_decision')?.patchValue(problemDecision);
+            this.analisisForm.get('problem_decision')?.patchValue(problemDecision, { emitEvent: false });
             this.mostrarRetroalimentacionDecision = false;
           }
           // Cargar preguntas normativas
@@ -327,7 +319,7 @@ export class AnalisisComponent implements OnInit {
                 calificacion: [normativa.calificacion || 'No Calificado'],
                 retroalimentacion: [normativa.retroalimentacion || ''],
                 showCalificar: [false]
-              }));
+              }, { emitEvent: false }));
             });
           }
           // Cargar preguntas fácticas
@@ -340,7 +332,7 @@ export class AnalisisComponent implements OnInit {
                 calificacion: [factica.calificacion || 'No Calificado'],
                 retroalimentacion: [factica.retroalimentacion || ''],
                 showCalificar: [false]
-              }));
+              }, { emitEvent: false }));
             });
           }
           // Inicializar arrays de control de retroalimentación
@@ -365,15 +357,14 @@ export class AnalisisComponent implements OnInit {
             calificacion: '',
             retroalimentacion: '',
             showCalificar: false
-          })
+          }, { emitEvent: false });
           // Inicializar pregunta del problema
           this.analisisForm.get('problem_question')?.patchValue({
             pregunta: '',
             calificacion: '',
             retroalimentacion: '',
             showCalificar: false
-          },
-          );
+          }, { emitEvent: false });
           this.dataLoaded = true;
           this.mostrarRetroalimentacionPregunta = false;
           this.mostrarRetroalimentacionDecision = false;
@@ -386,8 +377,8 @@ export class AnalisisComponent implements OnInit {
 
   onRetroalimentacionChange() {
     if (!this.isSubmitting) {
-      this.saved = false;
-      this.analisisForm.patchValue({ saved: false }, { emitEvent: false });
+      // this.saved = false;
+      // this.analisisForm.patchValue({ saved: false }, { emitEvent: false });
     }
   }
 
@@ -471,8 +462,10 @@ export class AnalisisComponent implements OnInit {
   getCalificacionValue(controlName: string): string {
     const control = this.analisisForm.get(controlName);
     const value = control?.value;
-    // Traduce 'No Calificado' a 'Sin validar' solo para visualización
-    if (!value || (value === 'No Calificado' || value === 'No calificado')) return 'Pendiente de validar';
+    // Traduce 'No Calificado' a 'Pendiente de validar' solo para visualización
+    if (!value || value === 'No Calificado' || value === 'No calificado') return 'Pendiente de validar';
+    if (value === 'Correcto') return 'Validado';
+    if (value === 'Incorrecto') return 'No validado';
     return value;
   }
 
@@ -617,48 +610,47 @@ export class AnalisisComponent implements OnInit {
 
   setCalificacion(index: number, type: string, calificacion: string) {
     const control = type === 'normativa' ? this.normativas.at(index) : this.facticas.at(index);
-    control.patchValue({ calificacion });
-    this.selectedButtons[`${type}_${index}`] = calificacion;
+    const mappedValue = calificacion === 'Correcto' ? 'Validado' : (calificacion === 'Incorrecto' ? 'No validado' : calificacion);
+    control.patchValue({ calificacion: mappedValue });
+    this.selectedButtons[`${type}_${index}`] = mappedValue;
   }
 
 
   isCalificacionCorrecta(type: string, index: number): boolean {
     const formArray = type === 'normativa' ? this.normativas : this.facticas;
     const control = formArray.at(index);
-    return control?.get('calificacion')?.value === 'Correcto' || false;
+    const val = control?.get('calificacion')?.value;
+    return val === 'Validado' || val === 'Correcto';
   }
 
   isCalificacionIncorrecta(type: string, index: number): boolean {
     const formArray = type === 'normativa' ? this.normativas : this.facticas;
     const control = formArray.at(index);
-    return control?.get('calificacion')?.value === 'Incorrecto' || false;
+    const val = control?.get('calificacion')?.value;
+    return val === 'No validado' || val === 'Incorrecto';
   }
 
   isCalificacionCorrecta2(type: string): boolean {
-    if (type === 'problem_question') {
-      return this.analisisForm.get('problem_question.calificacion')?.value === 'Correcto';
-    } else {
-      return this.analisisForm.get('problem_decision.calificacion')?.value === 'Correcto';
-    }
-    return false;
+    const controlPath = type === 'problem_question' ? 'problem_question.calificacion' : 'problem_decision.calificacion';
+    const val = this.analisisForm.get(controlPath)?.value;
+    return val === 'Validado' || val === 'Correcto';
   }
 
   isCalificacionIncorrecta2(type: string): boolean {
-    if (type === 'problem_question') {
-      return this.analisisForm.get('problem_question.calificacion')?.value === 'Incorrecto';
-    } else {
-      return this.analisisForm.get('problem_decision.calificacion')?.value === 'Incorrecto';
-    }
-    return false;
+    const controlPath = type === 'problem_question' ? 'problem_question.calificacion' : 'problem_decision.calificacion';
+    const val = this.analisisForm.get(controlPath)?.value;
+    return val === 'No validado' || val === 'Incorrecto';
   }
 
   setCalificacion2(type: string, calificacion: string) {
+    const mappedValue = calificacion === 'Correcto' ? 'Validado' : (calificacion === 'Incorrecto' ? 'No validado' : calificacion);
     if (type === 'problem_question') {
-      this.analisisForm.get('problem_question')?.patchValue({ calificacion: calificacion });
+      this.analisisForm.get('problem_question')?.patchValue({ calificacion: mappedValue });
     }
     if (type === 'problem_decision') {
-      this.analisisForm.get('problem_decision')?.patchValue({ calificacion: calificacion });
+      this.analisisForm.get('problem_decision')?.patchValue({ calificacion: mappedValue });
     }
+    this.selectedButtons[type] = mappedValue;
   }
 
   setRetroalimentacion(section: string, event: any) {

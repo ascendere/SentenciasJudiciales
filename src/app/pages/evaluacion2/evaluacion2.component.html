@@ -168,8 +168,8 @@
             </div>
             <div *ngIf="!isDocente && evaluacion2Form.get('saved')?.value" class="calificaciones">
                 <div class="calificacion-display" *ngIf="!saved" [ngClass]="{
-                    'calificacion-correcta': getCalificacionValue('sentenceSubject_calificacion') === 'Correcto',
-                    'calificacion-incorrecta': getCalificacionValue('sentenceSubject_calificacion') === 'Incorrecto',
+                    'calificacion-correcta': getCalificacionValue('sentenceSubject_calificacion') === 'Validado',
+                    'calificacion-incorrecta': getCalificacionValue('sentenceSubject_calificacion') === 'No validado',
                     'calificacion-no-calificado': getCalificacionValue('sentenceSubject_calificacion') === 'Pendiente de validar'
                   }">
                     {{ getCalificacionValue('sentenceSubject_calificacion') }}
@@ -237,21 +237,16 @@
                         <div class="calificaciones">
                             <div class="calificacion-display"
                                 [ngClass]="{
-                                'calificacion-correcta': getCalificacionValue('section' + sectionIndex + '_calificacion') === 'Correcto',
-                                'calificacion-incorrecta': getCalificacionValue('section' + sectionIndex + '_calificacion') === 'Incorrecto',
+                                'calificacion-correcta': getCalificacionValue('section' + sectionIndex + '_calificacion') === 'Validado',
+                                'calificacion-incorrecta': getCalificacionValue('section' + sectionIndex + '_calificacion') === 'No validado',
                                 'calificacion-no-calificado': getCalificacionValue('section' + sectionIndex + '_calificacion') === 'Pendiente de validar',}">
                                 {{ getCalificacionValue('section' + sectionIndex + '_calificacion') }}
                             </div>
                         </div>
-                        <div *ngIf="getCalificacionValue('section' + sectionIndex + '_calificacion') === 'Incorrecto'">
-                            <button type="button" (click)="toggleRetroalimentacion(section.id)" class="bttn-toggle">
-                                {{ mostrarRetroalimentacion[section.id] ? 'Ocultar' : 'Ver' }} justificación
-                            </button>
                             <div class="retroalimentacion-contenido" *ngIf="mostrarRetroalimentacion[section.id]">
                                 <p> {{ getRetroalimentacionValue('section' + sectionIndex
                                     + '_retroalimentacion') }}</p>
                             </div>
-                        </div>
                     </div>
                 </ng-container>
                 <!-- Boton de calificar y opcion de retroalimentacion que da el docente -->
@@ -330,8 +325,8 @@
                 <!-- Vista de la calificacion del estudiante -->
                 <div *ngIf="!isDocente && evaluacion2Form.get('saved')?.value" class="calificaciones">
                     <div class="calificacion-display" *ngIf="!saved" [ngClass]="{
-                            'calificacion-correcta': getCalificacionValue('reasonsNormative_calificacion') === 'Correcto',
-                            'calificacion-incorrecta': getCalificacionValue('reasonsNormative_calificacion') === 'Incorrecto',
+                            'calificacion-correcta': getCalificacionValue('reasonsNormative_calificacion') === 'Validado',
+                            'calificacion-incorrecta': getCalificacionValue('reasonsNormative_calificacion') === 'No validado',
                             'calificacion-no-calificado': getCalificacionValue('reasonsNormative_calificacion') === 'Pendiente de validar'
                           }">
                         {{ getCalificacionValue('reasonsNormative_calificacion') }}
@@ -375,8 +370,8 @@
                     }
                 <div *ngIf="!isDocente && evaluacion2Form.get('saved')?.value" class="calificaciones">
                     <div class="calificacion-display" *ngIf="!saved" [ngClass]="{
-                            'calificacion-correcta': getCalificacionValue('finalConclusion_calificacion') === 'Correcto',
-                            'calificacion-incorrecta': getCalificacionValue('finalConclusion_calificacion') === 'Incorrecto',
+                            'calificacion-correcta': getCalificacionValue('finalConclusion_calificacion') === 'Validado',
+                            'calificacion-incorrecta': getCalificacionValue('finalConclusion_calificacion') === 'No validado',
                             'calificacion-no-calificado': getCalificacionValue('finalConclusion_calificacion') === 'Pendiente de validar'
                           }">
                         {{ getCalificacionValue('finalConclusion_calificacion') }}

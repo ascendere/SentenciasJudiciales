@@ -24,10 +24,10 @@
     </div>
     <!-- Aqui empieza la pregunta del problema -->
     <div class="question">
-      <div *ngIf="!isDocente && analisisForm.get('saved')?.value" class="calificaciones">
+      <div *ngIf="!isDocente && (analisisForm.get('saved')?.value || analisisForm.get('docenteSaved')?.value)" class="calificaciones">
         <div class="calificacion-display" [ngClass]="{
-            'calificacion-correcta': getCalificacionValue('problem_question.calificacion') === 'Correcto',
-            'calificacion-incorrecta': getCalificacionValue('problem_question.calificacion') === 'Incorrecto',
+            'calificacion-correcta': getCalificacionValue('problem_question.calificacion') === 'Validado',
+            'calificacion-incorrecta': getCalificacionValue('problem_question.calificacion') === 'No validado',
             'calificacion-no-calificado': getCalificacionValue('problem_question.calificacion') === 'Pendiente de validar'
           }">
           {{ getCalificacionValue('problem_question.calificacion') }}
@@ -83,10 +83,10 @@
     <div formArrayName="normativas">
       <div *ngFor="let normativa of normativas.controls; let i=index" [formGroupName]="i">
         <div class="pa">
-          <div *ngIf="(!isDocente && analisisForm.get('saved')?.value )" class="calificaciones">
+          <div *ngIf="!isDocente && (analisisForm.get('saved')?.value || analisisForm.get('docenteSaved')?.value)" class="calificaciones">
             <div class="calificacion-display" [ngClass]="{
-                'calificacion-correcta': getCalificacionValue('normativas.' + i + '.calificacion') === 'Correcto',
-                'calificacion-incorrecta': getCalificacionValue('normativas.' + i + '.calificacion') === 'Incorrecto',
+                'calificacion-correcta': getCalificacionValue('normativas.' + i + '.calificacion') === 'Validado',
+                'calificacion-incorrecta': getCalificacionValue('normativas.' + i + '.calificacion') === 'No validado',
                 'calificacion-no-calificado': getCalificacionValue('normativas.' + i + '.calificacion') === 'Pendiente de validar'
               }">
               {{ getCalificacionValue('normativas.' + i + '.calificacion') }}
@@ -153,10 +153,10 @@
     <!-- Aqui empieza el formulario de faticas -->
     <div formArrayName="facticas">
       <div *ngFor="let factica of facticas.controls; let i=index" [formGroupName]="i">
-        <div *ngIf="!isDocente && analisisForm.get('saved')?.value" class="calificaciones">
+        <div *ngIf="!isDocente && (analisisForm.get('saved')?.value || analisisForm.get('docenteSaved')?.value)" class="calificaciones">
           <div class="calificacion-display" [ngClass]="{
-              'calificacion-correcta': getCalificacionValue('facticas.' + i + '.calificacion') === 'Correcto',
-              'calificacion-incorrecta': getCalificacionValue('facticas.' + i + '.calificacion') === 'Incorrecto',
+              'calificacion-correcta': getCalificacionValue('facticas.' + i + '.calificacion') === 'Validado',
+              'calificacion-incorrecta': getCalificacionValue('facticas.' + i + '.calificacion') === 'No validado',
               'calificacion-no-calificado': getCalificacionValue('facticas.' + i + '.calificacion') === 'Pendiente de validar'
             }">
             {{ getCalificacionValue('facticas.' + i + '.calificacion') }}
@@ -220,10 +220,10 @@
 
     <!-- Aqui empieza la decision final del problema -->
     <div class="problem_decision">
-      <div *ngIf="!isDocente && analisisForm.get('saved')?.value" class="calificaciones">
+      <div *ngIf="!isDocente && (analisisForm.get('saved')?.value || analisisForm.get('docenteSaved')?.value)" class="calificaciones">
         <div class="calificacion-display" [ngClass]="{
-            'calificacion-correcta': getCalificacionValue('problem_decision.calificacion') === 'Correcto',
-            'calificacion-incorrecta': getCalificacionValue('problem_decision.calificacion') === 'Incorrecto',
+            'calificacion-correcta': getCalificacionValue('problem_decision.calificacion') === 'Validado',
+            'calificacion-incorrecta': getCalificacionValue('problem_decision.calificacion') === 'No validado',
             'calificacion-no-calificado': getCalificacionValue('problem_decision.calificacion') === 'Pendiente de validar'
           }">
           {{ getCalificacionValue('problem_decision.calificacion') }}

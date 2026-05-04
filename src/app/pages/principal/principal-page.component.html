@@ -1,17 +1,19 @@
 <app-header></app-header>
 
-<!-- INDICADOR DE CARGA GLOBAL -->
-<div *ngIf="isLoading" class="loading-overlay">
-  <div class="spinner"></div>
-  <p>Cargando datos...</p>
-</div>
+@if (isLoading) {
+  <div class="loading-overlay">
+    <div class="spinner"></div>
+    <p>Cargando datos...</p>
+  </div>
+}
 
 <div style="position: relative; max-width: 1400px; margin: 0 auto; padding-top: 10px;">
 
-  <!-- ALERTA DE USUARIO INACTIVO -->
-  <div *ngIf="showInactiveAlert" class="inactive-alert">
-    ⚠️ Su cuenta está inactiva. Por favor, comuníquese con el administrador para activar su acceso.
-  </div>
+  @if (showInactiveAlert) {
+    <div class="inactive-alert">
+      ⚠️ Su cuenta está inactiva. Por favor, comuníquese con el administrador para activar su acceso.
+    </div>
+  }
 
   <!-- TÍTULO Y BOTONES PRINCIPALES (VISTA NORMAL) -->
   <div class="titulo" *ngIf="!showAdminPanel">
@@ -54,11 +56,13 @@
   </div>
 
   <!-- Notificaciones -->
-  <div *ngIf="alert"
-    [ngClass]="{'success-notification': alertype === 'success', 'error-notification': alertype === 'error'}"
-    class="notification-box">
-    {{ alert }}
-  </div>
+  @if (alert) {
+    <div [class.success-notification]="alertype === 'success'"
+         [class.error-notification]="alertype === 'error'"
+         class="notification-box">
+      {{ alert }}
+    </div>
+  }
 
   <!-- ========================================== -->
   <!--          DASHBOARD DE ADMIN                -->
@@ -365,105 +369,127 @@
       </div>
 
       <!-- Overlays -->
-      <div class="overlay" *ngIf="showRazonOverlay">
-        <div class="overlay-content">
-          <!-- PDF: DOCENTE Y ADMIN (Visible para ambos en el overlay) -->
-          <div style="display: flex; justify-content: center; margin-top: 15px;">
-            <a *ngIf="(currentUserData?.role === 'docente' || currentUserData?.isAdmin) && sentenciaPendiente?.archivoURL"
-              [href]="sentenciaPendiente?.archivoURL" target="_blank" class="bttn-view">
-              <i class="fa-solid fa-file-pdf"></i> Ver sentencia
-            </a>
-          </div>
-          <h3>Razón para {{ accionPendiente }}</h3>
-          <textarea [(ngModel)]="razonTexto"></textarea>
-          <div class="overlay-buttons">
-            <button (click)="guardarDecision()">Guardar</button>
-            <button (click)="cancelarDecision()">Cancelar</button>
+      @if (showRazonOverlay) {
+        <div class="overlay">
+          <div class="overlay-content">
+            <!-- PDF: DOCENTE Y ADMIN (Visible para ambos en el overlay) -->
+            <div style="display: flex; justify-content: center; margin-top: 15px;">
+              @if ((currentUserData?.role === 'docente' || currentUserData?.isAdmin) && sentenciaPendiente?.archivoURL) {
+                <a [href]="sentenciaPendiente?.archivoURL" target="_blank" class="bttn-view">
+                  <i class="fa-solid fa-file-pdf"></i> Ver sentencia
+                </a>
+              }
+            </div>
+            <h3>Razón para {{ accionPendiente }}</h3>
+            <textarea [(ngModel)]="razonTexto"></textarea>
+            <div class="overlay-buttons">
+              <button (click)="guardarDecision()">Guardar</button>
+              <button (click)="cancelarDecision()">Cancelar</button>
+            </div>
           </div>
         </div>
-      </div>
+      }
 
-      <div class="overlay2" *ngIf="showEditarEstadoOverlay">
-        <div class="overlay-content2">
+      @if (showEditarEstadoOverlay) {
+        <div class="overlay2">
+          <div class="overlay-content2">
 
-          <div class="overlay-header2">
-            <h3>Editar estado</h3>
-            <button class="bttn-close-modal2" (click)="cancelarEdicionEstado()">✕</button>
+            <div class="overlay-header2">
+              <h3>Editar estado</h3>
+              <button class="bttn-close-modal2" (click)="cancelarEdicionEstado()">✕</button>
+            </div>
+
+            <div class="overlay-body2">
+
+              @if ((currentUserData?.role === 'docente' || currentUserData?.isAdmin) && sentenciaEditar?.archivoURL) {
+                <a [href]="sentenciaEditar?.archivoURL" target="_blank" class="bttn-view">
+                  <i class="fa-solid fa-file-pdf"></i> Ver sentencia
+                </a>
+              }
+
+              <div>
+                <p class="overlay-label2">Selecciona un estado</p>
+                <div class="estado-options2">
+                  <button [class.selected]="nuevoEstado === 'aceptar'"
+                          (click)="nuevoEstado = 'aceptar'" class="bttn-accept2">
+                    <i class="fa-solid fa-check"></i> Aceptar
+                  </button>
+                  <button [class.selected]="nuevoEstado === 'negar'"
+                          (click)="nuevoEstado = 'negar'" class="bttn-reject2">
+                    <i class="fa-solid fa-xmark"></i> Negar
+                  </button>
+                </div>
+              </div>
+
+              @if (nuevoEstado === 'negar') {
+                <div>
+                  <p class="overlay-label2">Razón</p>
+                  <textarea [(ngModel)]="razonTexto"
+                            placeholder="Ingrese la nueva razón..."
+                            class="razon-textarea2"></textarea>
+                </div>
+              }
+
+              <div class="overlay-buttons2">
+                <button (click)="cancelarEdicionEstado()">Cancelar</button>
+                <button (click)="guardarEdicionEstado()">Guardar cambios</button>
+              </div>
+
+            </div>
           </div>
+        </div>
+      }
 
-          <div class="overlay-body2">
+      @if (sentenciaAEliminar) {
+        <div class="overlay">
+          <div class="overlay-content">
+            <h3>¿Está seguro de eliminar esta sentencia?</h3>
+            <div class="overlay-buttons">
+              <button class="bttn-accept" (click)="eliminarSentenciaConfirmada()">Sí, eliminar</button>
+              <button class="bttn-reject" (click)="cancelarEliminacion()">No</button>
+            </div>
+          </div>
+        </div>
+      }
 
-            <a *ngIf="(currentUserData?.role === 'docente' || currentUserData?.isAdmin) && sentenciaEditar?.archivoURL"
-              [href]="sentenciaEditar?.archivoURL" target="_blank" class="bttn-view">
-              <i class="fa-solid fa-file-pdf"></i> Ver sentencia
-            </a>
-
-            <div>
-              <p class="overlay-label2">Selecciona un estado</p>
-              <div class="estado-options2">
-                <button [class.selected]="nuevoEstado === 'aceptar'"
-                        (click)="nuevoEstado = 'aceptar'" class="bttn-accept2">
-                  <i class="fa-solid fa-check"></i> Aceptar
-                </button>
-                <button [class.selected]="nuevoEstado === 'negar'"
-                        (click)="nuevoEstado = 'negar'" class="bttn-reject2">
-                  <i class="fa-solid fa-xmark"></i> Negar
-                </button>
+      @if (showOverlay) {
+        <div class="overlay">
+          <div class="overlay-content">
+            <div class="overlay-content-text">
+              @if (selectedSentencia?.estado == 'aceptar') {
+                <p class="bttn-accept">Sentencia aceptada</p>
+              }
+              @if (selectedSentencia?.estado == 'negar') {
+                <p class="bttn-reject">Sentencia negada</p>
+              }
+              <div class="reason-container">
+                @if (selectedSentencia?.razon) {
+                  <p class="razon-est">
+                    <strong>Razón:</strong> {{ selectedSentencia?.razon }}
+                  </p>
+                }
+                @if (!selectedSentencia?.razon) {
+                  <p>
+                    No se proporcionó una razón para esta decisión.
+                  </p>
+                }
               </div>
             </div>
-
-            <div>
-              <p class="overlay-label2">Razón</p>
-              <textarea [(ngModel)]="razonTexto"
-                        placeholder="Ingrese la nueva razón..."
-                        class="razon-textarea2"></textarea>
+            <div class="bttn-close">
+              <button (click)="closeOverlay()" class="bttn-stnd">Cerrar</button>
             </div>
-
-            <div class="overlay-buttons2">
-              <button (click)="cancelarEdicionEstado()">Cancelar</button>
-              <button (click)="guardarEdicionEstado()">Guardar cambios</button>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-      <div class="overlay" *ngIf="sentenciaAEliminar">
-        <div class="overlay-content">
-          <h3>¿Está seguro de eliminar esta sentencia?</h3>
-          <div class="overlay-buttons">
-            <button class="bttn-accept" (click)="eliminarSentenciaConfirmada()">Sí, eliminar</button>
-            <button class="bttn-reject" (click)="cancelarEliminacion()">No</button>
-          </div>
-        </div>
-      </div>
-
-      <div *ngIf="showOverlay" class="overlay">
-        <div class="overlay-content">
-          <div class="overlay-content-text">
-            <p *ngIf="selectedSentencia?.estado == 'aceptar'" class="bttn-accept">Sentencia aceptada</p>
-            <p *ngIf="selectedSentencia?.estado == 'negar'" class="bttn-reject">Sentencia negada</p>
-            <div class="reason-container">
-              <p class="razon-est" *ngIf="selectedSentencia?.razon">
-                <strong>Razón:</strong> {{ selectedSentencia?.razon }}
-              </p>
-              <p *ngIf="!selectedSentencia?.razon">
-                No se proporcionó una razón para esta decisión.
-              </p>
+            <!-- PDF: Visible para el estudiante si tiene archivoURL -->
+            <div style="display: flex; justify-content: center; margin-top: 15px;">
+              @if (selectedSentencia?.archivoURL) {
+                <a [href]="selectedSentencia?.archivoURL" target="_blank"
+                  class="bttn-view">
+                  <i class="fa-solid fa-file-pdf"></i> Ver sentencia
+                </a>
+              }
             </div>
           </div>
-          <div class="bttn-close">
-            <button (click)="closeOverlay()" class="bttn-stnd">Cerrar</button>
-          </div>
-          <!-- PDF: Visible para el estudiante si tiene archivoURL -->
-          <div style="display: flex; justify-content: center; margin-top: 15px;">
-            <a *ngIf="selectedSentencia?.archivoURL" [href]="selectedSentencia?.archivoURL" target="_blank"
-              class="bttn-view">
-              <i class="fa-solid fa-file-pdf"></i> Ver sentencia
-            </a>
-          </div>
         </div>
-      </div>
+      }
 
     </div>
 

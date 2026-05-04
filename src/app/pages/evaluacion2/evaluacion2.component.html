@@ -335,51 +335,117 @@
 
             </div>
             <div class="likert-table">
-                <div>
-                    <app-caja-texto name="finalConclusion" formControlName="finalConclusion"
-                        [titulo]="'Resultados y Discusión *'">
-                    </app-caja-texto>
-                    <div *ngIf="!isDocente && evaluacion2Form.get('finalConclusion_retroalimentacion')?.value">
-                        <button type="button" (click)="toggleRetroalimentacion('finalConclusion')" class="bttn-toggle">
-                            {{ mostrarRetroalimentacion['finalConclusion'] ? 'Ocultar' : 'Ver' }} justificación
-                        </button>
-                        <div *ngIf="mostrarRetroalimentacion['finalConclusion']" class="retroalimentacion-contenido">
-                            <div class="retroalimentacion-texto">
-                                {{ evaluacion2Form.get('finalConclusion_retroalimentacion')?.value }}
+                <h3 class="titulo">Discusión *</h3>
+                <div style="margin-bottom: 10px;">
+                    <label class="likert-label">1. Investigue si de la sentencia analizada se presentaron recursos horizontales o verticales y señale el casillero correspondiente:</label>
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <label class="likert-label">1.1. Recursos horizontales:</label>
+                    <input type="radio" formControlName="recursosHorizontales" value="si" [disabled]="evaluacion2Form.disabled"> Si
+                    <input type="radio" formControlName="recursosHorizontales" value="no" [disabled]="evaluacion2Form.disabled"> No
+                </div>
+
+                @if (evaluacion2Form.get('recursosHorizontales')?.value === 'si') {
+                    <div style="margin-left: 20px; margin-top: 10px;">
+                        <p class="description" style="font-weight: 600; margin-bottom: 10px;">Si la respuesta es afirmativa indique el recurso horizontal:</p>
+                        <div class="column">
+                            <div class="option">
+                                <input type="radio" formControlName="recursoHorizontalTipo" value="aclaracion" [disabled]="evaluacion2Form.disabled">
+                                <label class="description">Aclaración</label>
+                            </div>
+                            <div class="option">
+                                <input type="radio" formControlName="recursoHorizontalTipo" value="reforma" [disabled]="evaluacion2Form.disabled">
+                                <label class="description">Reforma</label>
+                            </div>
+                            <div class="option">
+                                <input type="radio" formControlName="recursoHorizontalTipo" value="ampliacion" [disabled]="evaluacion2Form.disabled">
+                                <label class="description">Ampliación</label>
+                            </div>
+                            <div class="option">
+                                <input type="radio" formControlName="recursoHorizontalTipo" value="revocatoria" [disabled]="evaluacion2Form.disabled">
+                                <label class="description">Revocatoria</label>
+                            </div>
+                            <div class="option">
+                                <input type="radio" formControlName="recursoHorizontalTipo" value="otro" [disabled]="evaluacion2Form.disabled">
+                                <label class="description">Otro (especifique):</label>
+                                @if (evaluacion2Form.get('recursoHorizontalTipo')?.value === 'otro') {
+                                    <input type="text" formControlName="recursoHorizontalOtro" class="input-line" [disabled]="evaluacion2Form.disabled" placeholder="_______________________">
+                                }
                             </div>
                         </div>
                     </div>
+                }
+
+                <div style="margin-top: 15px;">
+                    <label class="likert-label">1.2. Recursos verticales:</label>
+                    <input type="radio" formControlName="recursosVerticales" value="si" [disabled]="evaluacion2Form.disabled"> Si
+                    <input type="radio" formControlName="recursosVerticales" value="no" [disabled]="evaluacion2Form.disabled"> No
                 </div>
-                    @if (isDocente) {
-                    <div class="bttns-rate">
-                        <button class="correct-button"
-                            [class.calificacion-correcta]="isButtonSelected('finalConclusion_calificacion', 'Correcto')"
-                            type="button"
-                            (click)="setCalificacion('finalConclusion_calificacion', 'Correcto')">Validar</button>
-                        <button class="incorrect-button"
-                            [class.calificacion-incorrecta]="isButtonSelected('finalConclusion_calificacion', 'Incorrecto')"
-                            type="button"
-                            (click)="setCalificacion('finalConclusion_calificacion', 'Incorrecto')">No validar</button>
+
+                @if (evaluacion2Form.get('recursosVerticales')?.value === 'si') {
+                    <div style="margin-left: 20px; margin-top: 10px;">
+                        <p class="description" style="font-weight: 600; margin-bottom: 10px;">Si la respuesta es afirmativa indique el recurso vertical:</p>
+                        <div class="column">
+                            <div class="option">
+                                <input type="radio" formControlName="recursoVerticalTipo" value="apelacion" [disabled]="evaluacion2Form.disabled">
+                                <label class="description">Apelación</label>
+                            </div>
+                            <div class="option">
+                                <input type="radio" formControlName="recursoVerticalTipo" value="otro" [disabled]="evaluacion2Form.disabled">
+                                <label class="description">Otro (especifique):</label>
+                                @if (evaluacion2Form.get('recursoVerticalTipo')?.value === 'otro') {
+                                    <input type="text" formControlName="recursoVerticalOtro" class="input-line" [disabled]="evaluacion2Form.disabled" placeholder="_______________________">
+                                }
+                            </div>
+                        </div>
                     </div>
-                    @if (isButtonSelected('finalConclusion_calificacion', 'Incorrecto')) {
-                      <div>
-                        <app-caja-texto [formControlName]="'finalConclusion_retroalimentacion'"
+                }
+            </div>
+
+            <!-- Opcion de calificar y retroalimentacion de la Discusión (Docente) -->
+            @if (isDocente) {
+                <div class="bttns-rate">
+                    <button class="correct-button"
+                        [class.calificacion-correcta]="isButtonSelected('discusion_calificacion', 'Correcto')"
+                        type="button"
+                        (click)="setCalificacion('discusion_calificacion', 'Correcto')">Validar</button>
+                    <button class="incorrect-button"
+                        [class.calificacion-incorrecta]="isButtonSelected('discusion_calificacion', 'Incorrecto')"
+                        type="button"
+                        (click)="setCalificacion('discusion_calificacion', 'Incorrecto')">No validar</button>
+                </div>
+                @if (isButtonSelected('discusion_calificacion', 'Incorrecto')) {
+                    <div>
+                        <app-caja-texto [formControlName]="'discusion_retroalimentacion'"
                             [disabled]="evaluacion2Form.disabled" [titulo]="'Justifique... *'"></app-caja-texto>
-                      </div>
-                    }
-                    }
-                <div *ngIf="!isDocente && evaluacion2Form.get('saved')?.value" class="calificaciones">
-                    <div class="calificacion-display" *ngIf="!saved" [ngClass]="{
-                            'calificacion-correcta': getCalificacionValue('finalConclusion_calificacion') === 'Validado',
-                            'calificacion-incorrecta': getCalificacionValue('finalConclusion_calificacion') === 'No validado',
-                            'calificacion-no-calificado': getCalificacionValue('finalConclusion_calificacion') === 'Pendiente de validar'
-                          }">
-                        {{ getCalificacionValue('finalConclusion_calificacion') }}
+                    </div>
+                }
+            }
+
+            <!-- Vista de la calificacion para el estudiante -->
+            <div *ngIf="!isDocente && evaluacion2Form.get('saved')?.value" class="calificaciones">
+                <div class="calificacion-display" *ngIf="!saved"
+                    [class.calificacion-correcta]="getCalificacionValue('discusion_calificacion') === 'Validado'"
+                    [class.calificacion-incorrecta]="getCalificacionValue('discusion_calificacion') === 'No validado'"
+                    [class.calificacion-no-calificado]="getCalificacionValue('discusion_calificacion') === 'Pendiente de validar'">
+                    {{ getCalificacionValue('discusion_calificacion') }}
+                </div>
+            </div>
+
+            <div *ngIf="!isDocente && evaluacion2Form.get('discusion_retroalimentacion')?.value">
+                <button type="button" (click)="toggleRetroalimentacion('discusion')" class="bttn-toggle">
+                    {{ mostrarRetroalimentacion['discusion'] ? 'Ocultar' : 'Ver' }} justificación
+                </button>
+                <div *ngIf="mostrarRetroalimentacion['discusion']" class="retroalimentacion-contenido">
+                    <div class="retroalimentacion-texto">
+                        {{ evaluacion2Form.get('discusion_retroalimentacion')?.value }}
                     </div>
                 </div>
             </div>
+            
+            </div>
         </div>
-    </div>
 
     <!-- BOTÓN DE GUARDAR (Solo si no está bloqueado) -->
     <!-- <button *ngIf="!isFormLocked" class="bttn-stnd-g" type="submit">Guardar</button> -->
@@ -441,7 +507,7 @@
 <app-alert-modal
   [message]="alertModalMessage"
   [visible]="confirmModalVisible"
-  [isConfirm]="!isDocente"
+  [isConfirm]="isConfirmModal"
   (closeModal)="onCancelConfirm()"
   (confirm)="onConfirmContinuar()">
 </app-alert-modal>

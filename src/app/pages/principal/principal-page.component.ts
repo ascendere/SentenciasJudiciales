@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
@@ -124,13 +124,13 @@ export class PrincipalPageComponent implements OnInit {
     };
   } = {};
 
-  constructor(
-    private afAuth: AngularFireAuth,
-    private firestore: AngularFirestore,
-    private storage: AngularFireStorage,
-    private router: Router,
-    private route: ActivatedRoute,
-  ) {
+  private afAuth = inject(AngularFireAuth);
+  private firestore = inject(AngularFirestore);
+  private storage = inject(AngularFireStorage);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+
+  constructor() {
     // Configurar filteredSentencias$ para que solo procese isLockedForAcceptance
     this.filteredSentencias$ = combineLatest([
       this._allSentencias.asObservable(),
@@ -477,9 +477,9 @@ export class PrincipalPageComponent implements OnInit {
       return;
     }
 
-    // Validar razón solo si se niega (o siempre, según tu preferencia). Aquí obligamos siempre.
-    if (!this.razonTexto.trim()) {
-      this.showNotification('Debe ingresar una razón.', 'error');
+    // Validar razón solo si se niega
+    if (this.accionPendiente === 'negar' && !this.razonTexto.trim()) {
+      this.showNotification('Debe ingresar una razón cuando se niega una sentencia.', 'error');
       return;
     }
 
@@ -1144,11 +1144,11 @@ Una vez que finalice el registro, la información quedará pendiente para que el
       !this.sentenciaEditar ||
       !this.sentenciaEditar.id ||
       !this.nuevoEstado ||
-      !this.razonTexto.trim()
+      (this.nuevoEstado === 'negar' && !this.razonTexto.trim())
     ) {
       console.error('Falta información necesaria para actualizar el estado');
-      if (!this.razonTexto.trim())
-        this.showNotification('Debe ingresar una razón', 'error');
+      if (this.nuevoEstado === 'negar' && !this.razonTexto.trim())
+        this.showNotification('Debe ingresar una razón cuando se niega una sentencia', 'error');
       return;
     }
 

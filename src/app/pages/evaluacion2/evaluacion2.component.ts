@@ -58,6 +58,7 @@ export class Evaluacion2Component implements OnInit {
   alertModalVisible = false;
   alertModalMessage = '';
   confirmModalVisible = false;
+  isConfirmModal = false;
   private _pendingGuardar: (() => void) | null = null;
 
   // Usamos UserData importado y añadimos currentUserData
@@ -98,9 +99,14 @@ export class Evaluacion2Component implements OnInit {
       reasonsNormative: [''],
       reasonsNormative_calificacion: [''],
       reasonsNormative_retroalimentacion: [''],
-      finalConclusion: [''],
-      finalConclusion_calificacion: [''],
-      finalConclusion_retroalimentacion: [''],
+      recursosHorizontales: [''],
+      recursoHorizontalTipo: [''],
+      recursoHorizontalOtro: [''],
+      recursosVerticales: [''],
+      recursoVerticalTipo: [''],
+      recursoVerticalOtro: [''],
+      discusion_calificacion: [''],
+      discusion_retroalimentacion: [''],
     });
   }
 
@@ -126,12 +132,15 @@ export class Evaluacion2Component implements OnInit {
     };
 
     if (this.tieneCamposVacios() && !this.isDocente) {
-      this._pendingGuardar = doGuardar;
       this.alertModalMessage = 'Tiene campos vacíos, complételos para avanzar.';
+      this.isConfirmModal = false;
       this.confirmModalVisible = true;
+      return;
     } else if (this.isDocente && this.tieneValidacionesPendientesDocente()) {
       this.alertModalMessage = 'Por favor, validar todas las preguntas antes de continuar.';
+      this.isConfirmModal = false;
       this.confirmModalVisible = true;
+      return;
     } else {
       doGuardar();
     }
@@ -143,7 +152,7 @@ export class Evaluacion2Component implements OnInit {
     const sectionsToCheck = [
       'sentenceSubject_calificacion',
       'reasonsNormative_calificacion',
-      'finalConclusion_calificacion'
+      'discusion_calificacion'
     ];
     let completados = 0;
     for (const campo of sectionsToCheck) {
@@ -152,18 +161,57 @@ export class Evaluacion2Component implements OnInit {
         completados++;
       }
     }
-    return completados < sectionsToCheck.length;
+
+    // Verificar también las calificaciones de las secciones dinámicas
+    this.sections.forEach((_, index) => {
+      const val = data[`section${index}_calificacion`];
+      if (val === 'Correcto' || val === 'Validado' || val === 'Incorrecto' || val === 'No validado') {
+        completados++;
+      }
+    });
+
+    return completados < (sectionsToCheck.length + this.sections.length);
   }
 
   /** Devuelve true si alguno de los campos del estudiante está vacío */
   tieneCamposVacios(): boolean {
     const values = this.evaluacion2Form.getRawValue();
-    return this.hayVaciosEnValor(values, '');
+    
+    // 1. Materia (sentenceSubject)
+    if (!values.sentenceSubject) return true;
+    if (values.sentenceSubject === 'Other' && (!values.other || !values.other.otherSubject)) return true;
+    
+    // 2. Secciones dinámicas (Likert)
+    for (let sIndex = 0; sIndex < this.sections.length; sIndex++) {
+      for (let qIndex = 0; qIndex < this.sections[sIndex].questions.length; qIndex++) {
+        const val = values[`section${sIndex}_question${qIndex}`];
+        if (val === null || val === undefined || val === '') return true;
+      }
+    }
+    
+    // 3. Fundamentación Normativa
+    if (!values.judgeAnalysis) return true;
+    if (!values.reasonsNormative) return true;
+
+    // 4. Discusión (Recursos)
+    if (!values.recursosHorizontales) return true;
+    if (values.recursosHorizontales === 'si') {
+      if (!values.recursoHorizontalTipo) return true;
+      if (values.recursoHorizontalTipo === 'otro' && !values.recursoHorizontalOtro) return true;
+    }
+    
+    if (!values.recursosVerticales) return true;
+    if (values.recursosVerticales === 'si') {
+      if (!values.recursoVerticalTipo) return true;
+      if (values.recursoVerticalTipo === 'otro' && !values.recursoVerticalOtro) return true;
+    }
+
+    return false;
   }
 
-  /** Verifica recursivamente si hay valores vacíos, ignorando campos de docente */
+  /** Verifica recursivamente si hay valores vacíos (Fallback para seguridad) */
   private hayVaciosEnValor(val: any, key: string): boolean {
-    const ignorar = ['calificacion', 'retroalimentacion', 'saved', 'docenteSaved', 'timestamp', 'numero_proceso'];
+    const ignorar = ['calificacion', 'retroalimentacion', 'saved', 'docenteSaved', 'timestamp', 'numero_proceso', 'valida', 'showCalificar'];
     if (ignorar.some(k => key.toLowerCase().includes(k))) return false;
     if (val === null || val === undefined || val === '') return true;
     if (typeof val === 'boolean') return false;
@@ -210,13 +258,18 @@ export class Evaluacion2Component implements OnInit {
       sentenceSubject: [''],
       judgeAnalysis: [''],
       reasonsNormative: [''],
-      finalConclusion: [''],
+      recursosHorizontales: [''],
+      recursoHorizontalTipo: [''],
+      recursoHorizontalOtro: [''],
+      recursosVerticales: [''],
+      recursoVerticalTipo: [''],
+      recursoVerticalOtro: [''],
+      discusion_calificacion: [''],
+      discusion_retroalimentacion: [''],
       sentenceSubject_calificacion: [''],
       sentenceSubject_retroalimentacion: [''],
       reasonsNormative_calificacion: [''],
       reasonsNormative_retroalimentacion: [''],
-      finalConclusion_calificacion: [''],
-      finalConclusion_retroalimentacion: [''],
     };
 
     this.sections.forEach((section, sIndex) => {

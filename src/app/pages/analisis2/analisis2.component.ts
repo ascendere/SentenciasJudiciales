@@ -65,6 +65,7 @@ export class Analisis2Component implements OnInit {
   // Variables para el modal de confirmación de campos vacíos
   alertModalMessage = '';
   confirmModalVisible = false;
+  isConfirmModal = false;
   private _pendingGuardar: (() => void) | null = null;
 
   constructor(
@@ -326,12 +327,15 @@ export class Analisis2Component implements OnInit {
     };
 
     if (this.tieneCamposVacios() && !this.isDocente) {
-      this._pendingGuardar = doGuardar;
       this.alertModalMessage = 'Tiene campos vacíos, complételos para avanzar.';
+      this.isConfirmModal = false;
       this.confirmModalVisible = true;
+      return;
     } else if (this.isDocente && this.tieneValidacionesPendientesDocente()) {
       this.alertModalMessage = 'Por favor, validar todas las preguntas antes de continuar.';
+      this.isConfirmModal = false;
       this.confirmModalVisible = true;
+      return;
     } else {
       doGuardar();
     }

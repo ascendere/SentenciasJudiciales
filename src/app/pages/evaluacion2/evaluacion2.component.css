@@ -301,3 +301,31 @@ input:disabled, textarea:disabled, select:disabled {
 .bttn-view:hover {
   background-color: #1a2a4d;
 }
+
+/* Estilos para la línea de entrada en recursos (especifique) */
+.input-line {
+    border: none;
+    border-bottom: 2px solid #172D5A;
+    background: transparent;
+    padding: 0 10px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 1rem;
+    color: #172D5A;
+    outline: none;
+    min-width: 250px;
+    transition: border-color 0.3s;
+    margin-left: 10px;
+}
+
+.input-line:focus {
+    border-bottom-color: #FFAB02;
+}
+
+.fade-in {
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
